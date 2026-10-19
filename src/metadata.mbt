@@ -3,12 +3,12 @@ fn read_schema_element(
   reader : CompactReader,
 ) -> SchemaElementMeta raise ParquetError {
   reader.begin_struct()
-  let mut type_code : Int? = None
-  let mut type_length : Int? = None
-  let mut repetition_type : Int? = None
+  let mut type_code : Int32? = None
+  let mut type_length : Int32? = None
+  let mut repetition_type : Int32? = None
   let mut name = ""
-  let mut num_children : Int? = None
-  let mut converted_type : Int? = None
+  let mut num_children : Int32? = None
+  let mut converted_type : Int32? = None
   let mut done = false
   while !done {
     match reader.read_field_begin() {
@@ -44,7 +44,7 @@ fn read_column_metadata(
 ) -> ColumnMetaDataMeta raise ParquetError {
   reader.begin_struct()
   let mut type_code = -1
-  let mut encodings : Array[Int] = []
+  let mut encodings : Array[Int32] = []
   let mut path_in_schema : Array[String] = []
   let mut codec = -1
   let mut num_values = 0L
@@ -67,7 +67,7 @@ fn read_column_metadata(
             if item_type != thrift_wire_i32 {
               invalid_data("Invalid encoding list element type")
             }
-            let values : Array[Int] = []
+            let values : Array[Int32] = []
             for _ in 0..<size {
               values.push(reader.read_i32())
             }
@@ -180,8 +180,8 @@ fn read_row_group(reader : CompactReader) -> RowGroupMeta raise ParquetError {
 ///|
 fn read_file_metadata(
   data : Bytes,
-  start : Int,
-  footer_len : Int,
+  start : Int32,
+  footer_len : Int32,
 ) -> FileMetaDataMeta raise ParquetError {
   let reader = CompactReader::new(data, start)
   let end_offset = start + footer_len
@@ -349,8 +349,8 @@ fn read_dictionary_page_header(
 ///|
 fn read_page_header(
   data : Bytes,
-  start : Int,
-) -> (PageHeaderMeta, Int) raise ParquetError {
+  start : Int32,
+) -> (PageHeaderMeta, Int32) raise ParquetError {
   let reader = CompactReader::new(data, start)
   reader.begin_struct()
   let mut page_type = -1
@@ -395,7 +395,7 @@ fn read_page_header(
 }
 
 ///|
-fn to_repetition(value : Int?) -> Repetition {
+fn to_repetition(value : Int32?) -> Repetition {
   match value {
     Some(1) => Optional
     Some(2) => Repeated
@@ -405,8 +405,8 @@ fn to_repetition(value : Int?) -> Repetition {
 
 ///|
 fn to_column_type(
-  type_code : Int,
-  converted_type : Int?,
+  type_code : Int32,
+  converted_type : Int32?,
 ) -> ColumnType raise ParquetError {
   if type_code == parquet_type_boolean {
     Boolean
@@ -440,12 +440,12 @@ fn build_leaf_columns(
 ) -> Array[LeafColumnMeta] raise ParquetError {
   fn walk(
     schema : Array[SchemaElementMeta],
-    index : Int,
+    index : Int32,
     path : Array[String],
-    max_definition_level : Int,
-    max_repetition_level : Int,
+    max_definition_level : Int32,
+    max_repetition_level : Int32,
     is_root : Bool,
-  ) -> (Int, Array[LeafColumnMeta]) raise ParquetError {
+  ) -> (Int32, Array[LeafColumnMeta]) raise ParquetError {
     let element = schema[index]
     let repetition = to_repetition(element.repetition_type)
     let next_definition = if is_root {

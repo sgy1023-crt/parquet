@@ -4,7 +4,7 @@ fn read_bench_fixture(name : String) -> Bytes {
 }
 
 ///|
-fn bench_bytes_from_ints(values : Array[Int]) -> Bytes {
+fn bench_bytes_from_ints(values : Array[Int32]) -> Bytes {
   Bytes::makei(values.length(), fn(index) { values[index].to_byte() })
 }
 
@@ -29,7 +29,7 @@ priv struct DeltaBenchContext {
   columns : Array[LeafColumnMeta]
   row_group : RowGroupMeta
   column_values : Array[Array[Value]]
-  row_count : Int
+  row_count : Int32
 }
 
 ///|
@@ -37,9 +37,9 @@ priv struct DeltaPageBenchContext {
   data : Bytes
   column : LeafColumnMeta
   chunk : ColumnChunkMeta
-  value_offset : Int
-  value_count : Int
-  encoding : Int
+  value_offset : Int32
+  value_count : Int32
+  encoding : Int32
 }
 
 ///|
@@ -84,7 +84,7 @@ fn delta_byte_array_bench_context() -> DeltaBenchContext {
 ///|
 fn fixture_column_context(
   fixture : String,
-  column_index : Int,
+  column_index : Int32,
 ) -> DeltaPageBenchContext {
   let ctx = fixture_bench_context(fixture)
   let column = ctx.columns[column_index]
@@ -135,7 +135,7 @@ fn fixture_column_context(
 }
 
 ///|
-fn delta_column_context(column_index : Int) -> DeltaPageBenchContext {
+fn delta_column_context(column_index : Int32) -> DeltaPageBenchContext {
   fixture_column_context("delta_binary_packed.parquet", column_index)
 }
 

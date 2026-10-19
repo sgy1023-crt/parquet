@@ -1,21 +1,21 @@
 ///|
 priv struct CompactReader {
   data : Bytes
-  mut offset : Int
-  mut last_field_id : Int
-  field_stack : Array[Int]
+  mut offset : Int32
+  mut last_field_id : Int32
+  field_stack : Array[Int32]
   mut bool_value : Bool?
 }
 
 ///|
-fn CompactReader::new(data : Bytes, start : Int) -> CompactReader {
+fn CompactReader::new(data : Bytes, start : Int32) -> CompactReader {
   { data, offset: start, last_field_id: 0, field_stack: [], bool_value: None, }
 }
 
 ///|
 fn CompactReader::ensure(
   self : CompactReader,
-  len : Int,
+  len : Int32,
 ) -> Unit raise ParquetError {
   if self.offset + len > self.data.length() {
     invalid_data("Unexpected end of compact stream")
@@ -47,7 +47,7 @@ fn CompactReader::read_binary(
 ///|
 fn CompactReader::skip_bytes(
   self : CompactReader,
-  len : Int,
+  len : Int32,
 ) -> Unit raise ParquetError {
   self.ensure(len)
   self.offset += len
@@ -86,17 +86,19 @@ fn CompactReader::read_varint64(
 }
 
 ///|
-fn CompactReader::read_varint32(self : CompactReader) -> Int raise ParquetError {
+fn CompactReader::read_varint32(
+  self : CompactReader,
+) -> Int32 raise ParquetError {
   self.read_varint64().to_int()
 }
 
 ///|
-fn CompactReader::read_i16(self : CompactReader) -> Int raise ParquetError {
+fn CompactReader::read_i16(self : CompactReader) -> Int32 raise ParquetError {
   zigzag_decode_i32(self.read_varint64())
 }
 
 ///|
-fn CompactReader::read_i32(self : CompactReader) -> Int raise ParquetError {
+fn CompactReader::read_i32(self : CompactReader) -> Int32 raise ParquetError {
   zigzag_decode_i32(self.read_varint64())
 }
 
@@ -124,7 +126,7 @@ fn CompactReader::read_bool(self : CompactReader) -> Bool raise ParquetError {
 }
 
 ///|
-fn compact_type_to_wire(compact_type : Int) -> Int raise ParquetError {
+fn compact_type_to_wire(compact_type : Int32) -> Int32 raise ParquetError {
   if compact_type == 0 {
     thrift_wire_stop
   } else if compact_type == 1 || compact_type == 2 {
@@ -155,7 +157,7 @@ fn compact_type_to_wire(compact_type : Int) -> Int raise ParquetError {
 }
 
 ///|
-fn wire_to_compact_type(wire_type : Int) -> Int raise ParquetError {
+fn wire_to_compact_type(wire_type : Int32) -> Int32 raise ParquetError {
   if wire_type == thrift_wire_bool {
     thrift_compact_bool_true
   } else if wire_type == thrift_wire_byte {
@@ -186,7 +188,7 @@ fn wire_to_compact_type(wire_type : Int) -> Int raise ParquetError {
 ///|
 fn CompactReader::read_field_begin(
   self : CompactReader,
-) -> (Int, Int)? raise ParquetError {
+) -> (Int32, Int32)? raise ParquetError {
   let byte = self.read_byte().to_int()
   if byte == thrift_compact_stop {
     return None
@@ -210,7 +212,7 @@ fn CompactReader::read_field_begin(
 ///|
 fn CompactReader::read_list_begin(
   self : CompactReader,
-) -> (Int, Int) raise ParquetError {
+) -> (Int32, Int32) raise ParquetError {
   let header = self.read_byte().to_int()
   let mut size = (header >> 4) & 0x0f
   if size == 15 {
@@ -223,7 +225,7 @@ fn CompactReader::read_list_begin(
 ///|
 fn CompactReader::read_map_begin(
   self : CompactReader,
-) -> (Int, Int, Int) raise ParquetError {
+) -> (Int32, Int32, Int32) raise ParquetError {
   let size = self.read_varint32()
   if size == 0 {
     return (thrift_wire_stop, thrift_wire_stop, 0)
@@ -237,7 +239,7 @@ fn CompactReader::read_map_begin(
 ///|
 fn CompactReader::skip(
   self : CompactReader,
-  wire_type : Int,
+  wire_type : Int32,
 ) -> Unit raise ParquetError {
   if wire_type == thrift_wire_bool {
     let _discard = self.read_bool()
@@ -313,7 +315,7 @@ fn ByteSink::push_bytes(self : ByteSink, value : BytesView) -> Unit {
 }
 
 ///|
-fn ByteSink::push_u32_le(self : ByteSink, value : Int) -> Unit {
+fn ByteSink::push_u32_le(self : ByteSink, value : Int32) -> Unit {
   self.buf.push((value & 0xff).to_byte())
   self.buf.push(((value >> 8) & 0xff).to_byte())
   self.buf.push(((value >> 16) & 0xff).to_byte())
@@ -321,7 +323,7 @@ fn ByteSink::push_u32_le(self : ByteSink, value : Int) -> Unit {
 }
 
 ///|
-fn ByteSink::push_i32_le(self : ByteSink, value : Int) -> Unit {
+fn ByteSink::push_i32_le(self : ByteSink, value : Int32) -> Unit {
   self.push_u32_le(value)
 }
 
@@ -346,7 +348,7 @@ fn ByteSink::push_varint(self : ByteSink, value : UInt64) -> Unit {
 }
 
 ///|
-fn ByteSink::push_zigzag_i32(self : ByteSink, value : Int) -> Unit {
+fn ByteSink::push_zigzag_i32(self : ByteSink, value : Int32) -> Unit {
   self.push_varint(zigzag_encode_i32(value))
 }
 
@@ -367,7 +369,7 @@ fn ByteSink::push_string(self : ByteSink, value : String) -> Unit {
 }
 
 ///|
-fn ByteSink::length(self : ByteSink) -> Int {
+fn ByteSink::length(self : ByteSink) -> Int32 {
   self.buf.length()
 }
 
@@ -379,8 +381,8 @@ fn ByteSink::to_bytes(self : ByteSink) -> Bytes {
 ///|
 priv struct CompactWriter {
   sink : ByteSink
-  mut last_field_id : Int
-  field_stack : Array[Int]
+  mut last_field_id : Int32
+  field_stack : Array[Int32]
 }
 
 ///|
@@ -406,8 +408,8 @@ fn CompactWriter::end_struct(self : CompactWriter) -> Unit {
 ///|
 fn CompactWriter::write_field_header(
   self : CompactWriter,
-  field_id : Int,
-  wire_type : Int,
+  field_id : Int32,
+  wire_type : Int32,
 ) -> Unit raise ParquetError {
   let compact_type = wire_to_compact_type(wire_type)
   let delta = field_id - self.last_field_id
@@ -423,8 +425,8 @@ fn CompactWriter::write_field_header(
 ///|
 fn CompactWriter::write_i32_field(
   self : CompactWriter,
-  field_id : Int,
-  value : Int,
+  field_id : Int32,
+  value : Int32,
 ) -> Unit raise ParquetError {
   self.write_field_header(field_id, thrift_wire_i32)
   self.sink.push_zigzag_i32(value)
@@ -433,7 +435,7 @@ fn CompactWriter::write_i32_field(
 ///|
 fn CompactWriter::write_i64_field(
   self : CompactWriter,
-  field_id : Int,
+  field_id : Int32,
   value : Int64,
 ) -> Unit raise ParquetError {
   self.write_field_header(field_id, thrift_wire_i64)
@@ -443,7 +445,7 @@ fn CompactWriter::write_i64_field(
 ///|
 fn CompactWriter::write_string_field(
   self : CompactWriter,
-  field_id : Int,
+  field_id : Int32,
   value : String,
 ) -> Unit raise ParquetError {
   self.write_field_header(field_id, thrift_wire_binary)
@@ -453,8 +455,8 @@ fn CompactWriter::write_string_field(
 ///|
 fn CompactWriter::write_list_header(
   self : CompactWriter,
-  size : Int,
-  item_type : Int,
+  size : Int32,
+  item_type : Int32,
 ) -> Unit raise ParquetError {
   let compact_type = wire_to_compact_type(item_type)
   if size < 15 {

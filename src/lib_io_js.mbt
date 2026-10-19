@@ -1,5 +1,5 @@
 ///|
-extern "js" fn js_read_file(path : String) -> Int =
+extern "js" fn js_read_file(path : String) -> Int32 =
   #|(path) => {
   #|  const state = globalThis.__parquet_file_io_state || {};
   #|  globalThis.__parquet_file_io_state = state;
@@ -44,7 +44,7 @@ extern "js" fn js_last_file_error() -> String =
   #|}
 
 ///|
-extern "js" fn js_write_file(path : String, data : Bytes) -> Int =
+extern "js" fn js_write_file(path : String, data : Bytes) -> Int32 =
   #|(path, data) => {
   #|  const state = globalThis.__parquet_file_io_state || {};
   #|  globalThis.__parquet_file_io_state = state;

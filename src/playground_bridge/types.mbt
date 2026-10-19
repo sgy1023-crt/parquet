@@ -8,7 +8,7 @@ pub struct PlaygroundTable {
 ///|
 pub struct PlaygroundResult {
   parquet_bytes : Bytes
-  parquet_size : Int
+  parquet_size : Int32
   parquet_file_name : String
   preview : PlaygroundTable
   query : PlaygroundTable

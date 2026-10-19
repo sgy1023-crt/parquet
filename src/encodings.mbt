@@ -1,5 +1,5 @@
 ///|
-fn read_u32_le(data : Bytes, start : Int) -> Int raise ParquetError {
+fn read_u32_le(data : Bytes, start : Int32) -> Int32 raise ParquetError {
   if start < 0 || start + 4 > data.length() {
     invalid_data("Unexpected end of buffer while reading u32")
   }
@@ -7,12 +7,12 @@ fn read_u32_le(data : Bytes, start : Int) -> Int raise ParquetError {
 }
 
 ///|
-fn read_i32_le(data : Bytes, start : Int) -> Int raise ParquetError {
+fn read_i32_le(data : Bytes, start : Int32) -> Int32 raise ParquetError {
   read_u32_le(data, start)
 }
 
 ///|
-fn read_i64_le(data : Bytes, start : Int) -> Int64 raise ParquetError {
+fn read_i64_le(data : Bytes, start : Int32) -> Int64 raise ParquetError {
   if start < 0 || start + 8 > data.length() {
     invalid_data("Unexpected end of buffer while reading i64")
   }
@@ -20,7 +20,7 @@ fn read_i64_le(data : Bytes, start : Int) -> Int64 raise ParquetError {
 }
 
 ///|
-fn read_u64_le(data : Bytes, start : Int) -> UInt64 raise ParquetError {
+fn read_u64_le(data : Bytes, start : Int32) -> UInt64 raise ParquetError {
   if start < 0 || start + 8 > data.length() {
     invalid_data("Unexpected end of buffer while reading u64")
   }
@@ -28,7 +28,7 @@ fn read_u64_le(data : Bytes, start : Int) -> UInt64 raise ParquetError {
 }
 
 ///|
-fn read_f32_le(data : Bytes, start : Int) -> Float raise ParquetError {
+fn read_f32_le(data : Bytes, start : Int32) -> Float raise ParquetError {
   if start < 0 || start + 4 > data.length() {
     invalid_data("Unexpected end of buffer while reading f32")
   }
@@ -36,12 +36,12 @@ fn read_f32_le(data : Bytes, start : Int) -> Float raise ParquetError {
 }
 
 ///|
-fn read_f64_le(data : Bytes, start : Int) -> Double raise ParquetError {
+fn read_f64_le(data : Bytes, start : Int32) -> Double raise ParquetError {
   read_u64_le(data, start).reinterpret_as_double()
 }
 
 ///|
-fn read_int96_micros(data : Bytes, start : Int) -> Int64 raise ParquetError {
+fn read_int96_micros(data : Bytes, start : Int32) -> Int64 raise ParquetError {
   let nanos_of_day = read_i64_le(data, start)
   let julian_day = read_u32_le(data, start + 8).to_int64()
   let day_micros = (julian_day - 2440588L) * 86400000000L
@@ -50,7 +50,7 @@ fn read_int96_micros(data : Bytes, start : Int) -> Int64 raise ParquetError {
 }
 
 ///|
-fn bit_mask_u64(bit_width : Int) -> UInt64 {
+fn bit_mask_u64(bit_width : Int32) -> UInt64 {
   if bit_width >= 64 {
     (Default::default() : UInt64).lnot()
   } else {
@@ -59,7 +59,7 @@ fn bit_mask_u64(bit_width : Int) -> UInt64 {
 }
 
 ///|
-fn read_partial_u64_le(data : Bytes, start : Int) -> UInt64 {
+fn read_partial_u64_le(data : Bytes, start : Int32) -> UInt64 {
   if start + 8 <= data.length() {
     return data.unsafe_read_uint64_le(start)
   }
@@ -74,8 +74,8 @@ fn read_partial_u64_le(data : Bytes, start : Int) -> UInt64 {
 ///|
 fn read_varint64_at(
   data : Bytes,
-  start : Int,
-) -> (UInt64, Int) raise ParquetError {
+  start : Int32,
+) -> (UInt64, Int32) raise ParquetError {
   let mut offset = start
   let mut shift = 0
   let mut result = Default::default()
@@ -97,7 +97,10 @@ fn read_varint64_at(
 }
 
 ///|
-fn read_varint32_at(data : Bytes, start : Int) -> (Int, Int) raise ParquetError {
+fn read_varint32_at(
+  data : Bytes,
+  start : Int32,
+) -> (Int32, Int32) raise ParquetError {
   let (value, consumed) = read_varint64_at(data, start)
   (value.to_int(), consumed)
 }
@@ -105,19 +108,19 @@ fn read_varint32_at(data : Bytes, start : Int) -> (Int, Int) raise ParquetError 
 ///|
 fn read_zigzag_i64_at(
   data : Bytes,
-  start : Int,
-) -> (Int64, Int) raise ParquetError {
+  start : Int32,
+) -> (Int64, Int32) raise ParquetError {
   let (value, consumed) = read_varint64_at(data, start)
   (zigzag_decode_i64(value), consumed)
 }
 
 ///|
 fn append_lsb_bitpacked_ints(
-  values : Array[Int],
+  values : Array[Int32],
   data : Bytes,
-  start : Int,
-  bit_width : Int,
-  count : Int,
+  start : Int32,
+  bit_width : Int32,
+  count : Int32,
 ) -> Unit {
   if count == 0 {
     return
@@ -184,9 +187,9 @@ fn append_lsb_bitpacked_ints(
 fn append_lsb_bitpacked_deltas(
   values : Array[Int64],
   data : Bytes,
-  start : Int,
-  bit_width : Int,
-  count : Int,
+  start : Int32,
+  bit_width : Int32,
+  count : Int32,
   min_delta : Int64,
   previous : Int64,
 ) -> Int64 {
@@ -261,14 +264,14 @@ fn append_lsb_bitpacked_deltas(
 
 ///|
 fn append_lsb_bitpacked_int_deltas(
-  values : Array[Int],
+  values : Array[Int32],
   data : Bytes,
-  start : Int,
-  bit_width : Int,
-  count : Int,
-  min_delta : Int,
-  previous : Int,
-) -> Int {
+  start : Int32,
+  bit_width : Int32,
+  count : Int32,
+  min_delta : Int32,
+  previous : Int32,
+) -> Int32 {
   let mut current = previous
   if count == 0 {
     return previous
@@ -339,9 +342,9 @@ fn append_lsb_bitpacked_int_deltas(
 fn append_lsb_bitpacked_int32_delta_values(
   values : Array[Value],
   data : Bytes,
-  start : Int,
-  bit_width : Int,
-  count : Int,
+  start : Int32,
+  bit_width : Int32,
+  count : Int32,
   min_delta : Int64,
   previous : Int64,
 ) -> Int64 {
@@ -418,9 +421,9 @@ fn append_lsb_bitpacked_int32_delta_values(
 fn append_lsb_bitpacked_int64_delta_values(
   values : Array[Value],
   data : Bytes,
-  start : Int,
-  bit_width : Int,
-  count : Int,
+  start : Int32,
+  bit_width : Int32,
+  count : Int32,
   min_delta : Int64,
   previous : Int64,
 ) -> Int64 {
@@ -496,13 +499,13 @@ fn append_lsb_bitpacked_int64_delta_values(
 ///|
 fn decode_rle_hybrid_range(
   data : Bytes,
-  start : Int,
-  end : Int,
-  bit_width : Int,
-  count : Int,
-) -> (Array[Int], Int) raise ParquetError {
+  start : Int32,
+  end : Int32,
+  bit_width : Int32,
+  count : Int32,
+) -> (Array[Int32], Int32) raise ParquetError {
   let mut offset = start
-  let values : Array[Int] = Array(capacity=count)
+  let values : Array[Int32] = Array(capacity=count)
   let mut produced = 0
   if bit_width == 0 {
     for _ in 0..<count {
@@ -550,11 +553,11 @@ fn decode_rle_hybrid_range(
 ///|
 fn decode_rle_hybrid(
   data : Bytes,
-  start : Int,
-  bit_width : Int,
-  count : Int,
+  start : Int32,
+  bit_width : Int32,
+  count : Int32,
   length_prefixed : Bool,
-) -> (Array[Int], Int) raise ParquetError {
+) -> (Array[Int32], Int32) raise ParquetError {
   let mut offset = start
   let end = if length_prefixed {
     let encoded_len = read_u32_le(data, offset)
@@ -572,8 +575,8 @@ fn decode_rle_hybrid(
 ///|
 fn decode_delta_binary_packed(
   data : Bytes,
-  start : Int,
-) -> (Array[Int64], Int) raise ParquetError {
+  start : Int32,
+) -> (Array[Int64], Int32) raise ParquetError {
   let original_start = start
   let data_len = data.length()
   let (block_size, block_size_len) = read_varint32_at(data, start)
@@ -642,8 +645,8 @@ fn decode_delta_binary_packed(
 ///|
 fn decode_delta_binary_packed_ints(
   data : Bytes,
-  start : Int,
-) -> (Array[Int], Int) raise ParquetError {
+  start : Int32,
+) -> (Array[Int32], Int32) raise ParquetError {
   let original_start = start
   let data_len = data.length()
   let (block_size, block_size_len) = read_varint32_at(data, start)
@@ -661,7 +664,7 @@ fn decode_delta_binary_packed_ints(
   if values_per_miniblock <= 0 {
     invalid_data("Invalid DELTA_BINARY_PACKED miniblock size")
   }
-  let values : Array[Int] = Array(capacity=total_count)
+  let values : Array[Int32] = Array(capacity=total_count)
   values.push(first_value.to_int())
   let mut previous = first_value.to_int()
   let mut produced = 1
@@ -723,11 +726,11 @@ fn decode_delta_binary_packed_ints(
 
 ///|
 fn decode_delta_binary_packed_ints_into(
-  values : Array[Int],
+  values : Array[Int32],
   data : Bytes,
-  start : Int,
-  count : Int,
-) -> Int raise ParquetError {
+  start : Int32,
+  count : Int32,
+) -> Int32 raise ParquetError {
   let original_start = start
   let data_len = data.length()
   let (block_size, block_size_len) = read_varint32_at(data, start)
@@ -811,9 +814,9 @@ fn decode_delta_binary_packed_ints_into(
 fn decode_delta_binary_packed_int64s_into(
   values : Array[Int64],
   data : Bytes,
-  start : Int,
-  count : Int,
-) -> Int raise ParquetError {
+  start : Int32,
+  count : Int32,
+) -> Int32 raise ParquetError {
   let original_start = start
   let data_len = data.length()
   let (block_size, block_size_len) = read_varint32_at(data, start)
@@ -884,30 +887,30 @@ fn decode_delta_binary_packed_int64s_into(
 ///|
 priv struct DeltaBinaryPackedCursor {
   data : Bytes
-  original_start : Int
-  total_count : Int
-  block_size : Int
-  miniblock_count : Int
-  values_per_miniblock : Int
-  mut next_block_offset : Int
-  mut produced : Int
+  original_start : Int32
+  total_count : Int32
+  block_size : Int32
+  miniblock_count : Int32
+  values_per_miniblock : Int32
+  mut next_block_offset : Int32
+  mut produced : Int32
   mut previous : Int64
   mut first_pending : Bool
-  mut block_remaining : Int
+  mut block_remaining : Int32
   mut min_delta : Int64
-  mut bit_widths_start : Int
-  mut next_miniblock_payload_offset : Int
-  mut current_miniblock_index : Int
-  mut current_miniblock_remaining : Int
-  mut current_bit_width : Int
-  mut current_byte_index : Int
-  mut current_shift : Int
+  mut bit_widths_start : Int32
+  mut next_miniblock_payload_offset : Int32
+  mut current_miniblock_index : Int32
+  mut current_miniblock_remaining : Int32
+  mut current_bit_width : Int32
+  mut current_byte_index : Int32
+  mut current_shift : Int32
 }
 
 ///|
 fn DeltaBinaryPackedCursor::new(
   data : Bytes,
-  start : Int,
+  start : Int32,
 ) -> DeltaBinaryPackedCursor raise ParquetError {
   let original_start = start
   let (block_size, block_size_len) = read_varint32_at(data, start)
@@ -1067,7 +1070,7 @@ fn DeltaBinaryPackedCursor::next(
 ///|
 fn DeltaBinaryPackedCursor::skip(
   self : DeltaBinaryPackedCursor,
-  count : Int,
+  count : Int32,
 ) -> Unit raise ParquetError {
   for _ in 0..<count {
     ignore(self.next())
@@ -1077,7 +1080,7 @@ fn DeltaBinaryPackedCursor::skip(
 ///|
 fn DeltaBinaryPackedCursor::consumed(
   self : DeltaBinaryPackedCursor,
-) -> Int raise ParquetError {
+) -> Int32 raise ParquetError {
   if self.produced != self.total_count {
     invalid_data("DELTA_BINARY_PACKED cursor is not exhausted")
   }
@@ -1087,9 +1090,9 @@ fn DeltaBinaryPackedCursor::consumed(
 ///|
 fn decode_delta_binary_packed_int32_values(
   data : Bytes,
-  start : Int,
-  count : Int,
-) -> (Array[Value], Int) raise ParquetError {
+  start : Int32,
+  count : Int32,
+) -> (Array[Value], Int32) raise ParquetError {
   let values : Array[Value] = Array(capacity=count)
   let consumed = decode_delta_binary_packed_int32_values_into(
     values, data, start, count,
@@ -1101,9 +1104,9 @@ fn decode_delta_binary_packed_int32_values(
 fn decode_delta_binary_packed_int32_values_into(
   values : Array[Value],
   data : Bytes,
-  start : Int,
-  count : Int,
-) -> Int raise ParquetError {
+  start : Int32,
+  count : Int32,
+) -> Int32 raise ParquetError {
   let original_start = start
   let data_len = data.length()
   let (block_size, block_size_len) = read_varint32_at(data, start)
@@ -1174,9 +1177,9 @@ fn decode_delta_binary_packed_int32_values_into(
 ///|
 fn decode_delta_binary_packed_int64_values(
   data : Bytes,
-  start : Int,
-  count : Int,
-) -> (Array[Value], Int) raise ParquetError {
+  start : Int32,
+  count : Int32,
+) -> (Array[Value], Int32) raise ParquetError {
   let values : Array[Value] = Array(capacity=count)
   let consumed = decode_delta_binary_packed_int64_values_into(
     values, data, start, count,
@@ -1188,9 +1191,9 @@ fn decode_delta_binary_packed_int64_values(
 fn decode_delta_binary_packed_int64_values_into(
   values : Array[Value],
   data : Bytes,
-  start : Int,
-  count : Int,
-) -> Int raise ParquetError {
+  start : Int32,
+  count : Int32,
+) -> Int32 raise ParquetError {
   let original_start = start
   let data_len = data.length()
   let (block_size, block_size_len) = read_varint32_at(data, start)
@@ -1262,14 +1265,14 @@ fn decode_delta_binary_packed_int64_values_into(
 priv struct DeltaLengthByteArrayCursor {
   data : Bytes
   lengths : DeltaBinaryPackedCursor
-  mut suffix_offset : Int
+  mut suffix_offset : Int32
 }
 
 ///|
 fn DeltaLengthByteArrayCursor::new(
   data : Bytes,
-  start : Int,
-  count : Int,
+  start : Int32,
+  count : Int32,
 ) -> DeltaLengthByteArrayCursor raise ParquetError {
   let scan = DeltaBinaryPackedCursor::new(data, start)
   if scan.total_count != count {
@@ -1310,8 +1313,8 @@ priv struct DeltaByteArrayValueCursor {
 ///|
 fn DeltaByteArrayValueCursor::new(
   data : Bytes,
-  start : Int,
-  count : Int,
+  start : Int32,
+  count : Int32,
 ) -> DeltaByteArrayValueCursor raise ParquetError {
   let prefix_scan = DeltaBinaryPackedCursor::new(data, start)
   if prefix_scan.total_count != count {
@@ -1330,7 +1333,7 @@ fn DeltaByteArrayValueCursor::new(
 fn DeltaByteArrayValueCursor::append_into(
   self : DeltaByteArrayValueCursor,
   target : Array[Value],
-  count : Int,
+  count : Int32,
   column_type : ColumnType,
 ) -> Unit raise ParquetError {
   for _ in 0..<count {
@@ -1356,7 +1359,7 @@ fn DeltaByteArrayValueCursor::append_into(
 fn DeltaByteArrayValueCursor::append_bytes_into(
   self : DeltaByteArrayValueCursor,
   target : Array[Bytes],
-  count : Int,
+  count : Int32,
 ) -> Unit raise ParquetError {
   for _ in 0..<count {
     let prefix_len = self.prefixes.next().to_int()
@@ -1376,9 +1379,9 @@ fn DeltaByteArrayValueCursor::append_bytes_into(
 ///|
 fn decode_delta_length_byte_array_layout_ints(
   data : Bytes,
-  start : Int,
-  count : Int,
-) -> (Array[Int], Int, Int) raise ParquetError {
+  start : Int32,
+  count : Int32,
+) -> (Array[Int32], Int32, Int32) raise ParquetError {
   let (lengths, lengths_len) = decode_delta_binary_packed_ints(data, start)
   if lengths.length() != count {
     invalid_data("DELTA_LENGTH_BYTE_ARRAY count mismatch")
@@ -1397,10 +1400,10 @@ fn decode_delta_length_byte_array_layout_ints(
 ///|
 fn decode_delta_byte_array_values(
   data : Bytes,
-  start : Int,
-  count : Int,
+  start : Int32,
+  count : Int32,
   column_type : ColumnType,
-) -> (Array[Value], Int) raise ParquetError {
+) -> (Array[Value], Int32) raise ParquetError {
   let values : Array[Value] = Array(capacity=count)
   let consumed = decode_delta_byte_array_values_into(
     values, data, start, count, column_type,
@@ -1412,9 +1415,9 @@ fn decode_delta_byte_array_values(
 fn decode_delta_byte_array_bytes_into(
   target : Array[Bytes],
   data : Bytes,
-  start : Int,
-  count : Int,
-) -> Int raise ParquetError {
+  start : Int32,
+  count : Int32,
+) -> Int32 raise ParquetError {
   let cursor = DeltaByteArrayValueCursor::new(data, start, count)
   cursor.append_bytes_into(target, count)
   cursor.suffixes.suffix_offset - start
@@ -1424,10 +1427,10 @@ fn decode_delta_byte_array_bytes_into(
 fn decode_delta_byte_array_values_into(
   target : Array[Value],
   data : Bytes,
-  start : Int,
-  count : Int,
+  start : Int32,
+  count : Int32,
   column_type : ColumnType,
-) -> Int raise ParquetError {
+) -> Int32 raise ParquetError {
   let (prefix_lengths, prefix_len_bytes) = decode_delta_binary_packed_ints(
     data, start,
   )
@@ -1469,9 +1472,9 @@ fn decode_delta_byte_array_values_into(
 ///|
 fn decode_plain_boolean_values(
   data : Bytes,
-  start : Int,
-  count : Int,
-) -> (Array[Value], Int) raise ParquetError {
+  start : Int32,
+  count : Int32,
+) -> (Array[Value], Int32) raise ParquetError {
   let values : Array[Value] = Array(capacity=count)
   for index in 0..<count {
     let byte_index = start + index / 8
@@ -1489,9 +1492,9 @@ fn decode_plain_boolean_values(
 fn decode_plain_boolean_values_into(
   target : Array[Value],
   data : Bytes,
-  start : Int,
-  count : Int,
-) -> Int raise ParquetError {
+  start : Int32,
+  count : Int32,
+) -> Int32 raise ParquetError {
   for index in 0..<count {
     let byte_index = start + index / 8
     let bit_index = index % 8
@@ -1507,19 +1510,19 @@ fn decode_plain_boolean_values_into(
 ///|
 priv struct DictionaryValueCursor {
   data : Bytes
-  index_bit_width : Int
-  mut offset : Int
-  mut run_remaining : Int
+  index_bit_width : Int32
+  mut offset : Int32
+  mut run_remaining : Int32
   mut repeated_run : Bool
-  mut repeated_index : Int
-  mut bitpacked_byte_index : Int
-  mut bitpacked_shift : Int
+  mut repeated_index : Int32
+  mut bitpacked_byte_index : Int32
+  mut bitpacked_shift : Int32
 }
 
 ///|
 fn DictionaryValueCursor::new(
   data : Bytes,
-  start : Int,
+  start : Int32,
 ) -> DictionaryValueCursor raise ParquetError {
   if start >= data.length() {
     invalid_data("Unexpected end of buffer while reading dictionary indices")
@@ -1539,7 +1542,7 @@ fn DictionaryValueCursor::new(
 ///|
 fn DictionaryValueCursor::fill_run(
   self : DictionaryValueCursor,
-  dictionary_len : Int,
+  dictionary_len : Int32,
 ) -> Unit raise ParquetError {
   if self.index_bit_width == 0 {
     if dictionary_len == 0 {
@@ -1547,7 +1550,7 @@ fn DictionaryValueCursor::fill_run(
     }
     self.repeated_run = true
     self.repeated_index = 0
-    self.run_remaining = Int::max(1, self.data.length())
+    self.run_remaining = Int32::max(1, self.data.length())
     return
   }
   if self.offset >= self.data.length() {
@@ -1591,7 +1594,7 @@ fn DictionaryValueCursor::fill_run(
 fn[T] DictionaryValueCursor::append_typed_into(
   self : DictionaryValueCursor,
   target : Array[T],
-  count : Int,
+  count : Int32,
   dictionary_values : Array[T],
 ) -> Unit raise ParquetError {
   if count == 0 {
@@ -1665,7 +1668,7 @@ fn[T] DictionaryValueCursor::append_typed_into(
 fn DictionaryValueCursor::append_into(
   self : DictionaryValueCursor,
   target : Array[Value],
-  count : Int,
+  count : Int32,
   dictionary_values : Array[Value],
 ) -> Unit raise ParquetError {
   self.append_typed_into(target, count, dictionary_values)
@@ -1674,10 +1677,10 @@ fn DictionaryValueCursor::append_into(
 ///|
 fn decode_dictionary_values(
   data : Bytes,
-  start : Int,
-  count : Int,
+  start : Int32,
+  count : Int32,
   dictionary_values : Array[Value],
-) -> (Array[Value], Int) raise ParquetError {
+) -> (Array[Value], Int32) raise ParquetError {
   let values : Array[Value] = Array(capacity=count)
   let consumed = decode_dictionary_values_into(
     values, data, start, count, dictionary_values,
@@ -1689,10 +1692,10 @@ fn decode_dictionary_values(
 fn decode_dictionary_values_into(
   target : Array[Value],
   data : Bytes,
-  start : Int,
-  count : Int,
+  start : Int32,
+  count : Int32,
   dictionary_values : Array[Value],
-) -> Int raise ParquetError {
+) -> Int32 raise ParquetError {
   let cursor = DictionaryValueCursor::new(data, start)
   cursor.append_into(target, count, dictionary_values)
   cursor.offset - start
@@ -1702,10 +1705,10 @@ fn decode_dictionary_values_into(
 fn[T] decode_dictionary_typed_values_into(
   target : Array[T],
   data : Bytes,
-  start : Int,
-  count : Int,
+  start : Int32,
+  count : Int32,
   dictionary_values : Array[T],
-) -> Int raise ParquetError {
+) -> Int32 raise ParquetError {
   let cursor = DictionaryValueCursor::new(data, start)
   cursor.append_typed_into(target, count, dictionary_values)
   cursor.offset - start
@@ -1714,10 +1717,10 @@ fn[T] decode_dictionary_typed_values_into(
 ///|
 fn decode_plain_values(
   data : Bytes,
-  start : Int,
+  start : Int32,
   column : LeafColumnMeta,
-  count : Int,
-) -> (Array[Value], Int) raise ParquetError {
+  count : Int32,
+) -> (Array[Value], Int32) raise ParquetError {
   if column.column_type == Boolean {
     return decode_plain_boolean_values(data, start, count)
   }
@@ -1788,10 +1791,10 @@ fn decode_plain_values(
 fn decode_plain_values_into(
   target : Array[Value],
   data : Bytes,
-  start : Int,
+  start : Int32,
   column : LeafColumnMeta,
-  count : Int,
-) -> Int raise ParquetError {
+  count : Int32,
+) -> Int32 raise ParquetError {
   if column.column_type == Boolean {
     return decode_plain_boolean_values_into(target, data, start, count)
   }
@@ -1860,12 +1863,12 @@ fn decode_plain_values_into(
 ///|
 fn decode_non_null_values(
   data : Bytes,
-  start : Int,
-  encoding : Int,
+  start : Int32,
+  encoding : Int32,
   column : LeafColumnMeta,
-  count : Int,
+  count : Int32,
   dictionary : Array[Value]?,
-) -> (Array[Value], Int) raise ParquetError {
+) -> (Array[Value], Int32) raise ParquetError {
   if count == 0 {
     return ([], 0)
   }
@@ -1910,12 +1913,12 @@ fn decode_non_null_values(
 fn decode_non_null_values_into(
   target : Array[Value],
   data : Bytes,
-  start : Int,
-  encoding : Int,
+  start : Int32,
+  encoding : Int32,
   column : LeafColumnMeta,
-  count : Int,
+  count : Int32,
   dictionary : Array[Value]?,
-) -> Int raise ParquetError {
+) -> Int32 raise ParquetError {
   if count == 0 {
     return 0
   }

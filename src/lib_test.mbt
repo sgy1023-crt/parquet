@@ -113,16 +113,16 @@ fn bytes_to_hex(bytes : Bytes) -> String {
     let low = value % 16
     out.write_char(
       if high < 10 {
-        Int::unsafe_to_char(48 + high)
+        Int32::unsafe_to_char(48 + high)
       } else {
-        Int::unsafe_to_char(55 + high)
+        Int32::unsafe_to_char(55 + high)
       },
     )
     out.write_char(
       if low < 10 {
-        Int::unsafe_to_char(48 + low)
+        Int32::unsafe_to_char(48 + low)
       } else {
-        Int::unsafe_to_char(55 + low)
+        Int32::unsafe_to_char(55 + low)
       },
     )
   }
@@ -130,7 +130,7 @@ fn bytes_to_hex(bytes : Bytes) -> String {
 }
 
 ///|
-fn bytes_from_ints(values : Array[Int]) -> Bytes {
+fn bytes_from_ints(values : Array[Int32]) -> Bytes {
   Bytes::makei(values.length(), fn(index) { values[index].to_byte() })
 }
 
@@ -163,7 +163,7 @@ fn assert_text_value(value : @parquet.Value, expected : String) -> Unit raise {
 ///|
 fn assert_row_shape(
   row : Array[@parquet.Value],
-  expected_id : Int,
+  expected_id : Int32,
   expected_bool : Bool,
   expected_date : String,
   expected_string : String,

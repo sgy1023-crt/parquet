@@ -1,10 +1,10 @@
 ///|
-fn bytes_from_ints(values : Array[Int]) -> Bytes {
+fn bytes_from_ints(values : Array[Int32]) -> Bytes {
   Bytes::makei(values.length(), fn(index) { values[index].to_byte() })
 }
 
 ///|
-fn delta_byte_array_fixture_page() -> (Bytes, Int, Int) raise ParquetError {
+fn delta_byte_array_fixture_page() -> (Bytes, Int32, Int32) raise ParquetError {
   let data = try! @fs.read_file_to_bytes(
     "fixtures/apache-parquet-testing/data/delta_byte_array.parquet",
   )

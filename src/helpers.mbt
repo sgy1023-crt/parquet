@@ -9,7 +9,7 @@ fn unsupported(message : String) -> Unit raise ParquetError {
 }
 
 ///|
-fn ceil_div(n : Int, d : Int) -> Int {
+fn ceil_div(n : Int32, d : Int32) -> Int32 {
   if n == 0 {
     0
   } else {
@@ -27,7 +27,7 @@ fn normalize_schema_name(value : String) -> String {
 }
 
 ///|
-fn bit_width(value : Int) -> Int {
+fn bit_width(value : Int32) -> Int32 {
   let mut width = 0
   let mut current = value
   while current > 0 {
@@ -49,7 +49,7 @@ fn zigzag_decode_i64(value : UInt64) -> Int64 {
 }
 
 ///|
-fn zigzag_decode_i32(value : UInt64) -> Int {
+fn zigzag_decode_i32(value : UInt64) -> Int32 {
   zigzag_decode_i64(value).to_int()
 }
 
@@ -59,7 +59,7 @@ fn zigzag_encode_i64(value : Int64) -> UInt64 {
 }
 
 ///|
-fn zigzag_encode_i32(value : Int) -> UInt64 {
+fn zigzag_encode_i32(value : Int32) -> UInt64 {
   zigzag_encode_i64(value.to_int64())
 }
 
@@ -76,7 +76,7 @@ fn string_to_bytes(value : String) -> Bytes {
 ///|
 fn bytes_concat_prefix(
   prev : Bytes,
-  prefix_len : Int,
+  prefix_len : Int32,
   suffix : BytesView,
 ) -> Bytes {
   if prefix_len == 0 {

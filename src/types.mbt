@@ -63,7 +63,7 @@ pub extend Repetition with Show::{to_string, output}
 ///|
 pub(all) enum Value {
   Boolean(Bool)
-  Int32(Int)
+  Int32(Int32)
   Int64(Int64)
   TimestampMicros(Int64)
   Float(Float)
@@ -101,8 +101,8 @@ pub extend Value with Show::{to_string, output}
 pub(all) enum ParquetColumnData {
   Values(Array[Value])
   BooleanValues(Array[Bool])
-  Int32Values(Array[Int])
-  NullableInt32Values(Array[Int?])
+  Int32Values(Array[Int32])
+  NullableInt32Values(Array[Int32?])
   Int64Values(Array[Int64])
   NullableInt64Values(Array[Int64?])
   TimestampMicrosValues(Array[Int64])
@@ -160,7 +160,7 @@ pub impl Show for ParquetColumnData with fn output(self, logger) {
 pub extend ParquetColumnData with Show::{to_string, output}
 
 ///|
-pub fn ParquetColumnData::length(self : ParquetColumnData) -> Int {
+pub fn ParquetColumnData::length(self : ParquetColumnData) -> Int32 {
   match self {
     Values(values) => values.length()
     BooleanValues(values) => values.length()
@@ -180,7 +180,10 @@ pub fn ParquetColumnData::length(self : ParquetColumnData) -> Int {
 }
 
 ///|
-fn ParquetColumnData::value_at(self : ParquetColumnData, index : Int) -> Value {
+fn ParquetColumnData::value_at(
+  self : ParquetColumnData,
+  index : Int32,
+) -> Value {
   match self {
     Values(values) => values[index]
     BooleanValues(values) => Value::Boolean(values[index])
@@ -240,9 +243,9 @@ fn rows_to_column_data(
 
 ///|
 fn materialize_rows(
-  column_count : Int,
+  column_count : Int32,
   column_data : Array[ParquetColumnData],
-  row_count : Int,
+  row_count : Int32,
 ) -> Array[Array[Value]] {
   let rows : Array[Array[Value]] = Array::makei(row_count, fn(_) {
     Array::make(column_count, Null)
@@ -313,7 +316,7 @@ pub fn Column::repetition(self : Column) -> Repetition {
 ///|
 pub struct ParquetFile {
   columns : Array[Column]
-  row_count : Int
+  row_count : Int32
   column_data : Array[ParquetColumnData]
   mut rows_cache : Array[Array[Value]]?
   created_by : String?
@@ -340,7 +343,7 @@ pub fn ParquetFile::columns(self : ParquetFile) -> Array[Column] {
 }
 
 ///|
-pub fn ParquetFile::row_count(self : ParquetFile) -> Int {
+pub fn ParquetFile::row_count(self : ParquetFile) -> Int32 {
   self.row_count
 }
 
@@ -398,7 +401,7 @@ pub extend ParquetFile with Show::{to_string, output}
 pub struct ParquetColumnarFile {
   columns : Array[Column]
   column_data : Array[ParquetColumnData]
-  row_count : Int
+  row_count : Int32
   mut column_values_cache : Array[Array[Value]]?
   created_by : String?
 } derive(Debug)
@@ -407,7 +410,7 @@ pub struct ParquetColumnarFile {
 pub fn new_parquet_columnar_file(
   columns : Array[Column],
   column_data : Array[ParquetColumnData],
-  row_count : Int,
+  row_count : Int32,
   created_by : String?,
 ) -> ParquetColumnarFile {
   { columns, column_data, row_count, column_values_cache: None, created_by, }
@@ -442,7 +445,7 @@ pub fn ParquetColumnarFile::column_values(
 }
 
 ///|
-pub fn ParquetColumnarFile::row_count(self : ParquetColumnarFile) -> Int {
+pub fn ParquetColumnarFile::row_count(self : ParquetColumnarFile) -> Int32 {
   self.row_count
 }
 

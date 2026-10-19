@@ -1,5 +1,5 @@
 ///|
-fn popcount_low_bits(value : Int, bit_count : Int) -> Int {
+fn popcount_low_bits(value : Int32, bit_count : Int32) -> Int32 {
   let mask = if bit_count >= 8 { 0xff } else { (1 << bit_count) - 1 }
   let mut bits = value & mask
   let mut count = 0
@@ -11,14 +11,14 @@ fn popcount_low_bits(value : Int, bit_count : Int) -> Int {
 }
 
 ///|
-fn push_null_values(target : Array[Value], count : Int) -> Unit {
+fn push_null_values(target : Array[Value], count : Int32) -> Unit {
   for _ in 0..<count {
     target.push(Null)
   }
 }
 
 ///|
-fn[T] push_none_values(target : Array[T?], count : Int) -> Unit {
+fn[T] push_none_values(target : Array[T?], count : Int32) -> Unit {
   for _ in 0..<count {
     target.push(None)
   }
@@ -28,9 +28,9 @@ fn[T] push_none_values(target : Array[T?], count : Int) -> Unit {
 fn append_decoded_values(
   target : Array[Value],
   decoded_values : Array[Value],
-  start : Int,
-  count : Int,
-) -> Int raise ParquetError {
+  start : Int32,
+  count : Int32,
+) -> Int32 raise ParquetError {
   if start + count > decoded_values.length() {
     invalid_data("Decoded value count does not match definition levels")
   }
@@ -44,9 +44,9 @@ fn append_decoded_values(
 fn[T] append_decoded_option_values(
   target : Array[T?],
   decoded_values : Array[T],
-  start : Int,
-  count : Int,
-) -> Int raise ParquetError {
+  start : Int32,
+  count : Int32,
+) -> Int32 raise ParquetError {
   if start + count > decoded_values.length() {
     invalid_data("Decoded value count does not match definition levels")
   }
@@ -59,11 +59,11 @@ fn[T] append_decoded_option_values(
 ///|
 fn count_boolean_levels_range_non_null(
   data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
-) -> Int raise ParquetError {
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
+) -> Int32 raise ParquetError {
   let mut offset = start
   let mut produced = 0
   let mut non_null_count = 0
@@ -122,10 +122,10 @@ fn count_boolean_levels_range_non_null(
 ///|
 fn boolean_levels_range_all_max(
   data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
 ) -> Bool raise ParquetError {
   let mut offset = start
   let mut produced = 0
@@ -181,11 +181,11 @@ fn boolean_levels_range_all_max(
 ///|
 fn count_levels_range_non_null(
   data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
-) -> Int raise ParquetError {
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
+) -> Int32 raise ParquetError {
   if max_level == 0 {
     return count
   }
@@ -264,10 +264,10 @@ fn count_levels_range_non_null(
 ///|
 fn levels_range_all_max(
   data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
 ) -> Bool raise ParquetError {
   if max_level == 0 {
     return true
@@ -344,10 +344,10 @@ fn levels_range_all_max(
 ///|
 fn decode_levels_v1(
   data : Bytes,
-  start : Int,
-  max_level : Int,
-  count : Int,
-) -> (Array[Int], Int) raise ParquetError {
+  start : Int32,
+  max_level : Int32,
+  count : Int32,
+) -> (Array[Int32], Int32) raise ParquetError {
   if max_level == 0 {
     (Array::make(count, 0), 0)
   } else {
@@ -359,12 +359,12 @@ fn decode_levels_v1(
 fn append_optional_values_from_boolean_levels_range(
   target : Array[Value],
   data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
   decoded_values : Array[Value],
-  non_null_count : Int,
+  non_null_count : Int32,
 ) -> Unit raise ParquetError {
   if decoded_values.length() != non_null_count {
     invalid_data("Decoded value count does not match definition levels")
@@ -446,12 +446,12 @@ fn append_optional_values_from_boolean_levels_range(
 fn[T] append_optional_option_values_from_boolean_levels_range(
   target : Array[T?],
   data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
   decoded_values : Array[T],
-  non_null_count : Int,
+  non_null_count : Int32,
 ) -> Unit raise ParquetError {
   if decoded_values.length() != non_null_count {
     invalid_data("Decoded value count does not match definition levels")
@@ -533,10 +533,10 @@ fn[T] append_optional_option_values_from_boolean_levels_range(
 fn append_optional_dictionary_values_from_boolean_levels_range(
   target : Array[Value],
   level_data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
   cursor : DictionaryValueCursor,
   dictionary_values : Array[Value],
 ) -> Unit raise ParquetError {
@@ -615,12 +615,12 @@ fn append_optional_dictionary_values_from_boolean_levels_range(
 fn append_optional_plain_values_from_boolean_levels_range(
   target : Array[Value],
   level_data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
   value_data : Bytes,
-  value_offset : Int,
+  value_offset : Int32,
   column : LeafColumnMeta,
 ) -> Unit raise ParquetError {
   let mut offset = start
@@ -707,12 +707,12 @@ fn append_optional_plain_values_from_boolean_levels_range(
 fn append_optional_values_from_levels_range(
   target : Array[Value],
   data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
   decoded_values : Array[Value],
-  non_null_count : Int,
+  non_null_count : Int32,
 ) -> Unit raise ParquetError {
   if max_level == 0 {
     target.append(decoded_values)
@@ -808,12 +808,12 @@ fn append_optional_values_from_levels_range(
 fn[T] append_optional_option_values_from_levels_range(
   target : Array[T?],
   data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
   decoded_values : Array[T],
-  non_null_count : Int,
+  non_null_count : Int32,
 ) -> Unit raise ParquetError {
   if max_level == 0 {
     for value in decoded_values {
@@ -911,10 +911,10 @@ fn[T] append_optional_option_values_from_levels_range(
 fn append_optional_dictionary_values_from_levels_range(
   target : Array[Value],
   level_data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
   cursor : DictionaryValueCursor,
   dictionary_values : Array[Value],
 ) -> Unit raise ParquetError {
@@ -1009,10 +1009,10 @@ fn append_optional_dictionary_values_from_levels_range(
 fn append_optional_delta_byte_array_values_from_boolean_levels_range(
   target : Array[Value],
   level_data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
   cursor : DeltaByteArrayValueCursor,
   column_type : ColumnType,
 ) -> Unit raise ParquetError {
@@ -1091,10 +1091,10 @@ fn append_optional_delta_byte_array_values_from_boolean_levels_range(
 fn append_optional_delta_byte_array_values_from_levels_range(
   target : Array[Value],
   level_data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
   cursor : DeltaByteArrayValueCursor,
   column_type : ColumnType,
 ) -> Unit raise ParquetError {
@@ -1189,12 +1189,12 @@ fn append_optional_delta_byte_array_values_from_levels_range(
 fn append_optional_plain_values_from_levels_range(
   target : Array[Value],
   level_data : Bytes,
-  start : Int,
-  end : Int,
-  max_level : Int,
-  count : Int,
+  start : Int32,
+  end : Int32,
+  max_level : Int32,
+  count : Int32,
   value_data : Bytes,
-  value_offset : Int,
+  value_offset : Int32,
   column : LeafColumnMeta,
 ) -> Unit raise ParquetError {
   if max_level == 0 {
@@ -1298,7 +1298,7 @@ fn append_optional_plain_values_from_levels_range(
 fn decode_data_page_v1(
   values : Array[Value],
   data : Bytes,
-  payload_offset : Int,
+  payload_offset : Int32,
   header : DataPageHeaderMeta,
   column : LeafColumnMeta,
   dictionary : Array[Value]?,
@@ -1461,12 +1461,12 @@ fn decode_data_page_v1(
 fn decode_data_page_v2(
   values : Array[Value],
   level_data : Bytes,
-  payload_offset : Int,
+  payload_offset : Int32,
   header : DataPageHeaderV2Meta,
   column : LeafColumnMeta,
   dictionary : Array[Value]?,
   value_data : Bytes,
-  value_offset : Int,
+  value_offset : Int32,
 ) -> Unit raise ParquetError {
   if column.max_repetition_level > 0 {
     unsupported("Repeated columns are not supported yet")
@@ -1619,7 +1619,7 @@ fn decode_data_page_v2(
 ///|
 fn decode_dictionary_page(
   data : Bytes,
-  payload_offset : Int,
+  payload_offset : Int32,
   header : DictionaryPageHeaderMeta,
   column : LeafColumnMeta,
 ) -> Array[Value] raise ParquetError {
@@ -1639,7 +1639,7 @@ fn decode_dictionary_page(
 ///|
 fn decode_dictionary_page_bytes(
   data : Bytes,
-  payload_offset : Int,
+  payload_offset : Int32,
   header : DictionaryPageHeaderMeta,
   column : LeafColumnMeta,
 ) -> Array[Bytes] raise ParquetError {
@@ -1676,7 +1676,7 @@ fn decode_dictionary_page_bytes(
 }
 
 ///|
-fn value_to_int32(value : Value) -> Int raise ParquetError {
+fn value_to_int32(value : Value) -> Int32 raise ParquetError {
   match value {
     Int32(v) => v
     _ => {
@@ -1705,11 +1705,11 @@ fn value_to_int64(
 fn decode_required_utf8_values_into(
   target : Array[Bytes],
   data : Bytes,
-  start : Int,
-  encoding : Int,
-  count : Int,
+  start : Int32,
+  encoding : Int32,
+  count : Int32,
   dictionary : Array[Bytes]?,
-) -> Int raise ParquetError {
+) -> Int32 raise ParquetError {
   if count == 0 {
     return 0
   }
@@ -1747,12 +1747,12 @@ fn decode_required_utf8_values_into(
 fn decode_required_binary_values_into(
   target : Array[Bytes],
   data : Bytes,
-  start : Int,
-  encoding : Int,
+  start : Int32,
+  encoding : Int32,
   column : LeafColumnMeta,
-  count : Int,
+  count : Int32,
   dictionary : Array[Bytes]?,
-) -> Int raise ParquetError {
+) -> Int32 raise ParquetError {
   if count == 0 {
     return 0
   }
@@ -1794,13 +1794,13 @@ fn decode_required_binary_values_into(
 
 ///|
 fn decode_required_int32_values_into(
-  target : Array[Int],
+  target : Array[Int32],
   data : Bytes,
-  start : Int,
-  encoding : Int,
-  count : Int,
+  start : Int32,
+  encoding : Int32,
+  count : Int32,
   dictionary : Array[Value]?,
-) -> Int raise ParquetError {
+) -> Int32 raise ParquetError {
   if encoding == encoding_plain {
     let mut offset = start
     for _ in 0..<count {
@@ -1838,12 +1838,12 @@ fn decode_required_int32_values_into(
 fn decode_required_int64_values_into(
   target : Array[Int64],
   data : Bytes,
-  start : Int,
-  encoding : Int,
+  start : Int32,
+  encoding : Int32,
   column_type : ColumnType,
-  count : Int,
+  count : Int32,
   dictionary : Array[Value]?,
-) -> Int raise ParquetError {
+) -> Int32 raise ParquetError {
   if encoding == encoding_plain {
     let mut offset = start
     match column_type {
@@ -1894,12 +1894,12 @@ fn decode_required_int32_column_chunk(
   data : Bytes,
   chunk : ColumnChunkMeta,
   column : LeafColumnMeta,
-) -> Array[Int] raise ParquetError {
+) -> Array[Int32] raise ParquetError {
   let mut offset = chunk.meta_data.dictionary_page_offset
     .unwrap_or(chunk.meta_data.data_page_offset)
     .to_int()
   let target_values = chunk.meta_data.num_values.to_int()
-  let values : Array[Int] = Array(capacity=target_values)
+  let values : Array[Int32] = Array(capacity=target_values)
   let mut dictionary : Array[Value]? = None
   while values.length() < target_values {
     let (page_header, page_header_len) = read_page_header(data, offset)
@@ -2570,12 +2570,12 @@ fn decode_optional_int32_column_chunk(
   data : Bytes,
   chunk : ColumnChunkMeta,
   column : LeafColumnMeta,
-) -> Array[Int?] raise ParquetError {
+) -> Array[Int32?] raise ParquetError {
   let mut offset = chunk.meta_data.dictionary_page_offset
     .unwrap_or(chunk.meta_data.data_page_offset)
     .to_int()
   let target_values = chunk.meta_data.num_values.to_int()
-  let values : Array[Int?] = Array(capacity=target_values)
+  let values : Array[Int32?] = Array(capacity=target_values)
   let mut dictionary : Array[Value]? = None
   while values.length() < target_values {
     let (page_header, page_header_len) = read_page_header(data, offset)
@@ -2621,7 +2621,7 @@ fn decode_optional_int32_column_chunk(
               data_page.num_values,
             )
           }
-          let dense : Array[Int] = Array(capacity=non_null_count)
+          let dense : Array[Int32] = Array(capacity=non_null_count)
           if non_null_count > 0 {
             ignore(
               decode_required_int32_values_into(
@@ -2703,7 +2703,7 @@ fn decode_optional_int32_column_chunk(
               data_page_v2.num_values,
             )
           }
-          let dense : Array[Int] = Array(capacity=non_null_count)
+          let dense : Array[Int32] = Array(capacity=non_null_count)
           if non_null_count > 0 {
             ignore(
               decode_required_int32_values_into(
@@ -3644,9 +3644,9 @@ fn decode_column_chunk(
 
 ///|
 fn build_rows(
-  column_count : Int,
+  column_count : Int32,
   column_values : Array[Array[Value]],
-  row_count : Int,
+  row_count : Int32,
 ) -> Array[Array[Value]] raise ParquetError {
   for column_index in 0..<column_count {
     if column_values[column_index].length() != row_count {
@@ -3668,7 +3668,7 @@ fn build_rows(
 ///|
 fn append_column_data(
   all_column_data : Array[ParquetColumnData],
-  column_index : Int,
+  column_index : Int32,
   chunk_data : ParquetColumnData,
 ) -> Unit {
   match all_column_data[column_index] {

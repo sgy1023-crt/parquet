@@ -1,9 +1,9 @@
 ///|
 fn read_snappy_le_int(
   data : Bytes,
-  start : Int,
-  byte_count : Int,
-) -> Int raise ParquetError {
+  start : Int32,
+  byte_count : Int32,
+) -> Int32 raise ParquetError {
   if start < 0 || start + byte_count > data.length() {
     invalid_data("Unexpected end of SNAPPY buffer")
   }
@@ -17,7 +17,7 @@ fn read_snappy_le_int(
 ///|
 fn decode_snappy_block(
   data : Bytes,
-  expected_len : Int,
+  expected_len : Int32,
 ) -> Bytes raise ParquetError {
   let reader = CompactReader::new(data, 0)
   let decoded_len = reader.read_varint32()
@@ -99,10 +99,10 @@ fn decode_snappy_block(
 ///|
 fn decompress_page_payload(
   data : Bytes,
-  payload_offset : Int,
-  compressed_len : Int,
-  expected_len : Int,
-  codec : Int,
+  payload_offset : Int32,
+  compressed_len : Int32,
+  expected_len : Int32,
+  codec : Int32,
 ) -> Bytes raise ParquetError {
   let payload = data
     .exact_view(start=payload_offset, end=payload_offset + compressed_len)

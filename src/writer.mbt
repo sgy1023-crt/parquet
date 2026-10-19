@@ -35,8 +35,8 @@ fn encode_definition_levels(
 
 ///|
 fn encode_rle_levels(
-  values : Array[Int],
-  bit_width : Int,
+  values : Array[Int32],
+  bit_width : Int32,
   length_prefixed : Bool,
 ) -> Bytes {
   let body = ByteSink::new()
@@ -66,13 +66,13 @@ fn encode_rle_levels(
 ///|
 fn collect_column_values(
   file : ParquetFile,
-  column_index : Int,
+  column_index : Int32,
 ) -> Array[Value] {
   file.rows().map(fn(row) { row[column_index] })
 }
 
 ///|
-fn writer_type_code(column_type : ColumnType) -> Int raise ParquetError {
+fn writer_type_code(column_type : ColumnType) -> Int32 raise ParquetError {
   match column_type {
     Int32 => parquet_type_int32
     Int64 => parquet_type_int64
@@ -158,8 +158,8 @@ fn encode_data_page(
 ///|
 fn write_list_of_i32(
   writer : CompactWriter,
-  field_id : Int,
-  values : Array[Int],
+  field_id : Int32,
+  values : Array[Int32],
 ) -> Unit raise ParquetError {
   writer.write_field_header(field_id, thrift_wire_list)
   writer.write_list_header(values.length(), thrift_wire_i32)
@@ -171,7 +171,7 @@ fn write_list_of_i32(
 ///|
 fn write_list_of_string(
   writer : CompactWriter,
-  field_id : Int,
+  field_id : Int32,
   values : Array[String],
 ) -> Unit raise ParquetError {
   writer.write_field_header(field_id, thrift_wire_list)
