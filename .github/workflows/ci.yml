@@ -25,7 +25,7 @@ jobs:
         uses: extractions/setup-just@v3
       - name: Install MoonBit CLI
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - name: Moon version
         run: moon version --all
@@ -61,7 +61,7 @@ jobs:
         uses: extractions/setup-just@v3
       - name: Install MoonBit CLI
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - name: Install DuckDB native library
         if: matrix.target == 'native'
@@ -129,7 +129,7 @@ jobs:
           cache-dependency-path: playground/pnpm-lock.yaml
       - name: Install MoonBit CLI
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - name: Moon version
         run: moon version --all
