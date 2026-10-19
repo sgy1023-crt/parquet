@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import time
 
 
@@ -81,6 +82,10 @@ class Commands:
             "timeout_seconds": TIMEOUT_SECONDS,
             "elapsed_seconds": round(time.monotonic() - started, 3),
         })
+        if code != 0:
+            for output in (stdout, stderr):
+                if output:
+                    print(output.decode("utf-8", "replace"), file=sys.stderr, flush=True)
         if timed_out:
             raise TimeoutError(f"{prefix} exceeded {TIMEOUT_SECONDS} seconds")
         return code, stdout.decode("utf-8", "replace"), stderr.decode("utf-8", "replace")
@@ -205,6 +210,8 @@ def prepare(root, toolchain, log_dir):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--toolchain", type=Path, required=True, help="MOON_HOME containing the verified bin/ and lib/")
