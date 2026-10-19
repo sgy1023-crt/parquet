@@ -3838,15 +3838,33 @@ fn check_magic(data : Bytes) -> Unit raise ParquetError {
 ///|
 fn decode_parquet_columnar(
   data : Bytes,
+  selected_groups? : Array[Int32],
 ) -> ParquetColumnarFile raise ParquetError {
-  check_magic(data)
-  let footer_len = read_u32_le(data, data.length() - 8)
-  let footer_start = data.length() - 8 - footer_len
-  if footer_start < 4 {
-    invalid_data("Invalid parquet footer length")
-  }
-  let metadata = read_file_metadata(data, footer_start, footer_len)
+  let metadata = parse_parquet_metadata(data)
   let leaf_columns = build_leaf_columns(metadata.schema)
+  validate_row_groups(metadata, leaf_columns)
+  let indices = match selected_groups {
+    Some(indices) => indices
+    None => Array::makei(metadata.row_groups.length(), i => i)
+  }
+  // Complete validation precedes any page decode, including for an invalid
+  // later index after an otherwise readable (or poisoned) first group.
+  let seen = Array::make(metadata.row_groups.length(), false)
+  let mut total_rows = 0L
+  for index in indices {
+    if index < 0 || index >= metadata.row_groups.length() {
+      invalid_data("Invalid row group index: \{index}")
+    }
+    if seen[index] {
+      invalid_data("Duplicate row group index: \{index}")
+    }
+    seen[index] = true
+    let rows = metadata.row_groups[index].num_rows
+    if rows > 2147483647L - total_rows {
+      invalid_data("Selected row count exceeds columnar batch Int capacity")
+    }
+    total_rows += rows
+  }
   let public_columns = build_public_columns(leaf_columns)
   let column_count = leaf_columns.length()
   let all_column_data : Array[ParquetColumnData] = Array::makei(column_count, fn(
@@ -3854,12 +3872,8 @@ fn decode_parquet_columnar(
   ) {
     Values([])
   })
-  let mut total_rows = 0
-  for row_group in metadata.row_groups {
-    if row_group.columns.length() != column_count {
-      invalid_data("RowGroup column count does not match schema leaf count")
-    }
-    total_rows += row_group.num_rows.to_int()
+  for index in indices {
+    let row_group = metadata.row_groups[index]
     for column_index in 0..<column_count {
       let chunk_data = decode_column_chunk_columnar(
         data,
@@ -3882,7 +3896,7 @@ fn decode_parquet_columnar(
   new_parquet_columnar_file(
     public_columns,
     all_column_data,
-    total_rows,
+    total_rows.to_int(),
     metadata.created_by,
   )
 }

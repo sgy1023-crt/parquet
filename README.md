@@ -2,6 +2,103 @@
 
 Parquet reader/writer for MoonBit.
 
+## 2026 MoonBit Hackathon — Row Group Statistics & Selective Decoding
+
+This is a substantive enhancement of [mizchi/parquet](https://github.com/mizchi/parquet),
+originally developed by [mizchi](https://github.com/mizchi), rather than a new
+Parquet implementation. [sgy1023-crt](https://github.com/sgy1023-crt) contributed
+the row-group statistics, metadata and selective-decoding work in this fork,
+based on upstream commit
+[`44d4dc9`](https://github.com/mizchi/parquet/commit/44d4dc9c492008fce77e1a980f1048decbd7f1c9).
+The upstream [consumer request, Issue #4](https://github.com/mizchi/parquet/issues/4),
+provides the use case. Existing reader/writer, codecs, DuckDB integration,
+playground and benchmarks remain upstream contributions.
+
+| Before, at the upstream baseline | This contribution |
+|---|---|
+| Every row group enters full reading | Single or multiple groups can be decoded directly |
+| Statistics are not exposed | Raw Statistics and a validated signed-integer view are public |
+| No public row-group inspection | Footer metadata, row groups and column chunks are inspectable |
+| Consumers cannot select groups before decoding | Consumers can retain candidate groups and then filter actual rows |
+
+The three new APIs are `read_metadata`, `read_row_group_columnar` and
+`read_row_groups_columnar`. Existing `read_bytes`, `read_bytes_columnar` and
+file convenience APIs keep their signatures; full and selected reads share
+the existing decoders. See the [public entries](src/lib.mbt),
+[metadata views](src/metadata_view.mbt), [statistics implementation](src/statistics.mbt)
+and [API contract](docs/ROW_GROUP_API.md).
+
+```moonbit
+let metadata = @parquet.read_metadata(bytes)
+let group = metadata.row_groups()[2]
+let statistics = group.columns()[0].signed_integer_statistics()
+let batch = @parquet.read_row_groups_columnar(bytes, [2])
+```
+
+Selections preserve caller order. Duplicates and invalid indices fail before
+decoding; an empty selection retains the schema. The typed statistics view
+interprets only flat, unannotated INT32/INT64. Unknown semantics or ordering
+cannot justify skipping by value range; a validated all-NULL count can still
+eliminate a group. Raw fields preserve modern/legacy bounds,
+optional NULL/distinct counts and exactness flags separately.
+
+The separate [consumer package and CLI](docs/ROW_GROUP_EXAMPLE.md) implement
+`column >= threshold`: select candidate groups, decode them, then apply a real
+residual filter. For `i32 >= 102`, the base fixture selects group `[2]`, decodes
+four rows and matches two. INT64 thresholds beyond `2^53` remain exact.
+
+**Verified locally on 2026-10-19:** JS, wasm, wasm-gc and native each passed
+**71/71** tests; **32 fixtures** replayed byte-for-byte, comprising 16 valid
+files and 16 intentional negative cases. Four-backend instrumentation measured
+column-chunk decoder entries **8 → 2** for one of four groups and **0** for an
+empty selection. Poisoned-page tests independently show that unselected pages
+are not decoded. These are decoding-work measurements; speed, peak memory and
+file I/O benefits have not been measured. Input is still the whole file as
+`Bytes`; there is no Range I/O, predicate engine or column projection.
+
+### Reproduce this contribution
+
+Install the [documented tools and native prerequisites](docs/DEPENDENCIES.md):
+MoonBit (measured: moon `0.1.20261012`, moonc `0.10.15+943464bfa`), Node.js 24,
+CPython 3.13.5 and DuckDB 1.4.4. The full native checks require a C compiler.
+Use an isolated Python environment for fixture tools. A POSIX-shell example is:
+
+```sh
+git clone --branch feat/row-group-statistics https://github.com/sgy1023-crt/parquet.git
+cd parquet
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r scripts/row-group-requirements.txt
+python scripts/prepare_dependency_cache.py --toolchain "$HOME/.moon"
+python scripts/verify_delivery.py --toolchain "$HOME/.moon" --duckdb "$DUCKDB_DIR"
+```
+
+`DUCKDB_DIR` must contain the downloaded DuckDB header and native library; its
+platform-specific setup and complete PowerShell commands are in
+[DEPENDENCIES.md](docs/DEPENDENCIES.md). The verification script runs tests,
+checks, builds, consumer smoke tests, fixture replay and real decoder-entry
+measurements, with a hard 60-second limit for each child check. It exits nonzero
+on failure. For a quick consumer run after setup:
+
+```sh
+moon run src/cmd/row_group_scan --target js -- fixtures/row-groups/base.parquet i32 102
+moon run src/cmd/row_group_scan --target js -- fixtures/row-groups/base.parquet i64 9007199254740995
+```
+
+Read the [validation record](docs/VALIDATION.md),
+[delivery scope](docs/DELIVERY.md) and
+[hackathon submission notes](docs/HACKATHON_SUBMISSION.md).
+[GitHub Actions](https://github.com/sgy1023-crt/parquet/actions/workflows/ci.yml)
+is the source for remote status; local results above do not assert that a remote
+run has passed. The suggested category is existing-project maintenance; the
+eligibility of an unmerged personal fork is not guaranteed.
+
+The fork preserves the upstream [Apache-2.0 license](LICENSE).
+[Synthetic fixtures and their provenance](fixtures/row-groups/README.md) are
+Apache-2.0; the upstream Apache test corpus retains its existing source and
+license information. Statistics follow a
+[pinned Apache parquet-format specification](https://github.com/apache/parquet-format/blob/53b8bd8576827080d4382fa457003f45b41cda6e/src/main/thrift/parquet.thrift).
+
 ## Status
 
 - Reader passes the vendored `apache-parquet-testing` fixtures used in this repo:
@@ -21,6 +118,9 @@ Parquet reader/writer for MoonBit.
   - MoonBit-written parquet can be read by DuckDB.
 
 ## Benchmark
+
+The following upstream benchmarks predate this contribution and do not measure
+the new selective-reading APIs.
 
 Measured on 2026-03-09 on `Apple M5`, `macOS 26.2`, `Darwin arm64`.
 

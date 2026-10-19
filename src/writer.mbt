@@ -208,6 +208,7 @@ fn encode_parquet(file : ParquetFile) -> Bytes raise ParquetError {
         total_compressed_size: page.length().to_int64(),
         data_page_offset: page_offset.to_int64(),
         dictionary_page_offset: None,
+        statistics: None,
       },
     })
   }

@@ -9,6 +9,7 @@ fn read_schema_element(
   let mut name = ""
   let mut num_children : Int32? = None
   let mut converted_type : Int32? = None
+  let mut has_logical_type = false
   let mut done = false
   while !done {
     match reader.read_field_begin() {
@@ -24,6 +25,11 @@ fn read_schema_element(
           4 => name = reader.read_string()
           5 => num_children = Some(reader.read_i32())
           6 => converted_type = Some(reader.read_i32())
+          10 => {
+            expect_wire(wire_type, thrift_wire_struct)
+            has_logical_type = true
+            reader.skip(wire_type)
+          }
           _ => reader.skip(wire_type)
         }
     }
@@ -35,6 +41,7 @@ fn read_schema_element(
     name,
     num_children,
     converted_type,
+    has_logical_type,
   }
 }
 
@@ -52,6 +59,7 @@ fn read_column_metadata(
   let mut total_compressed_size = 0L
   let mut data_page_offset = 0L
   let mut dictionary_page_offset : Int64? = None
+  let mut statistics : Statistics? = None
   let mut done = false
   while !done {
     match reader.read_field_begin() {
@@ -90,12 +98,24 @@ fn read_column_metadata(
           7 => total_compressed_size = reader.read_i64()
           9 => data_page_offset = reader.read_i64()
           11 => dictionary_page_offset = Some(reader.read_i64())
+          12 => {
+            expect_wire(wire_type, thrift_wire_struct)
+            statistics = Some(read_statistics(reader))
+          }
           _ => reader.skip(wire_type)
         }
     }
   }
   if type_code < 0 || codec < 0 {
     invalid_data("Missing required ColumnMetaData fields")
+  }
+  if num_values < 0L {
+    invalid_data("Negative column value count")
+  }
+  if statistics is Some(stats) &&
+    stats.nulls is Some(count) &&
+    count > num_values {
+    invalid_data("Statistics null count exceeds column value count")
   }
   {
     type_code,
@@ -107,6 +127,7 @@ fn read_column_metadata(
     total_compressed_size,
     data_page_offset,
     dictionary_page_offset,
+    statistics,
   }
 }
 
@@ -183,13 +204,18 @@ fn read_file_metadata(
   start : Int32,
   footer_len : Int32,
 ) -> FileMetaDataMeta raise ParquetError {
-  let reader = CompactReader::new(data, start)
-  let end_offset = start + footer_len
+  // Restrict Compact parsing to the footer; a truncated struct must not read
+  // the trailing length/magic bytes as metadata.
+  let footer = data.exact_view(start~, end=start + footer_len).to_owned()
+  let reader = CompactReader::new(footer, 0)
+  let end_offset = footer_len
   reader.begin_struct()
   let mut version = -1
   let mut schema : Array[SchemaElementMeta] = []
   let mut row_groups : Array[RowGroupMeta] = []
   let mut created_by : String? = None
+  let mut num_rows = -1L
+  let mut column_orders : Array[ColumnOrder]? = None
   let mut done = false
   while !done {
     match reader.read_field_begin() {
@@ -211,7 +237,7 @@ fn read_file_metadata(
             }
             schema = values
           }
-          3 => ignore(reader.read_i64())
+          3 => num_rows = reader.read_i64()
           4 => {
             let (item_type, size) = reader.read_list_begin()
             if item_type != thrift_wire_struct {
@@ -224,6 +250,16 @@ fn read_file_metadata(
             row_groups = values
           }
           6 => created_by = Some(reader.read_string())
+          7 => {
+            expect_wire(wire_type, thrift_wire_list)
+            let (item_type, size) = reader.read_list_begin()
+            expect_wire(item_type, thrift_wire_struct)
+            let values : Array[ColumnOrder] = []
+            for _ in 0..<size {
+              values.push(read_column_order(reader))
+            }
+            column_orders = Some(values)
+          }
           _ => reader.skip(wire_type)
         }
     }
@@ -234,7 +270,10 @@ fn read_file_metadata(
   if version < 0 {
     invalid_data("Missing FileMetaData.version")
   }
-  { schema, row_groups, created_by, }
+  if num_rows < 0L {
+    invalid_data("Missing or negative FileMetaData.num_rows")
+  }
+  { schema, row_groups, created_by, num_rows, column_orders, }
 }
 
 ///|
@@ -446,6 +485,9 @@ fn build_leaf_columns(
     max_repetition_level : Int32,
     is_root : Bool,
   ) -> (Int32, Array[LeafColumnMeta]) raise ParquetError {
+    if index >= schema.length() {
+      invalid_data("Truncated schema tree")
+    }
     let element = schema[index]
     let repetition = to_repetition(element.repetition_type)
     let next_definition = if is_root {
@@ -463,6 +505,9 @@ fn build_leaf_columns(
     let next_path = if is_root { path } else { path + [element.name] }
     match element.num_children {
       Some(children) => {
+        if children < 0 {
+          invalid_data("Negative schema child count")
+        }
         let mut cursor = index + 1
         let leaves : Array[LeafColumnMeta] = []
         for _ in 0..<children {
@@ -482,6 +527,10 @@ fn build_leaf_columns(
               [
                 {
                   name: normalize_schema_name(element.name),
+                  path: next_path,
+                  type_code,
+                  converted_type: element.converted_type,
+                  has_logical_type: element.has_logical_type,
                   column_type: to_column_type(type_code, element.converted_type),
                   repetition,
                   max_definition_level: next_definition,
@@ -503,6 +552,9 @@ fn build_leaf_columns(
         }
     }
   }
-  let (_, leaves) = walk(schema, 0, [], 0, 0, true)
+  let (end_index, leaves) = walk(schema, 0, [], 0, 0, true)
+  if end_index != schema.length() {
+    invalid_data("Schema tree has trailing elements")
+  }
   leaves
 }

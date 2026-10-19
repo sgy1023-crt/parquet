@@ -1,0 +1,7 @@
+# Keep measured source and generator hashes stable on Windows and Unix.
+src/** text eol=lf
+scripts/*.py text eol=lf
+fixtures/row-groups/*.json text eol=lf
+fixtures/row-groups/*.txt text eol=lf
+validation/** text eol=lf
+*.parquet binary

@@ -17,7 +17,10 @@ fn CompactReader::ensure(
   self : CompactReader,
   len : Int32,
 ) -> Unit raise ParquetError {
-  if self.offset + len > self.data.length() {
+  if self.offset < 0 ||
+    len < 0 ||
+    self.offset > self.data.length() ||
+    len > self.data.length() - self.offset {
     invalid_data("Unexpected end of compact stream")
   }
 }
@@ -75,6 +78,9 @@ fn CompactReader::read_varint64(
   let mut result = Default::default()
   while shift < 64 {
     let byte = self.read_byte().to_int()
+    if shift == 63 && (byte & 0xfe) != 0 {
+      invalid_data("Varint exceeds UInt64 range")
+    }
     let payload = (byte & 0x7f).to_uint64()
     result = result | (payload << shift)
     if (byte & 0x80) == 0 {
@@ -89,7 +95,11 @@ fn CompactReader::read_varint64(
 fn CompactReader::read_varint32(
   self : CompactReader,
 ) -> Int32 raise ParquetError {
-  self.read_varint64().to_int()
+  let value = self.read_varint64()
+  if value > 2147483647UL {
+    invalid_data("Compact length exceeds Int capacity")
+  }
+  value.to_int()
 }
 
 ///|

@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - main
+      - feat/row-group-statistics
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -27,8 +29,8 @@ jobs:
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - name: Moon version
         run: moon version --all
-      - name: Moon update
-        run: moon update
+      - name: Prepare dependency manifests
+        run: python3 scripts/prepare_dependency_cache.py --toolchain "$HOME/.moon"
       - name: Verify format
         run: just fmt-check
       - name: Verify generated interfaces
@@ -41,6 +43,10 @@ jobs:
         include:
           - os: ubuntu-latest
             target: js
+          - os: ubuntu-latest
+            target: wasm
+          - os: ubuntu-latest
+            target: wasm-gc
           - os: ubuntu-latest
             target: native
             duckdb_asset: libduckdb-linux-amd64.zip
@@ -76,12 +82,33 @@ jobs:
           fi
       - name: Moon version
         run: moon version --all
-      - name: Moon update
-        run: moon update
+      - name: Prepare dependency manifests
+        run: python3 scripts/prepare_dependency_cache.py --toolchain "$HOME/.moon"
       - name: Moon check
         run: just target=${{ matrix.target }} check
       - name: Moon test
-        run: just target=${{ matrix.target }} test
+        run: |
+          export CPATH="$HOME/brew/opt/duckdb/include:${CPATH:-}"
+          export LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${LIBRARY_PATH:-}"
+          export LD_LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${LD_LIBRARY_PATH:-}"
+          export DYLD_LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${DYLD_LIBRARY_PATH:-}"
+          python3 scripts/run_validation.py ci-test-${{ matrix.target }} --cwd . -- moon test --target ${{ matrix.target }}
+      - name: Verify real chunk decoder work
+        run: |
+          export CPATH="$HOME/brew/opt/duckdb/include:${CPATH:-}"
+          export LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${LIBRARY_PATH:-}"
+          export LD_LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${LD_LIBRARY_PATH:-}"
+          export DYLD_LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${DYLD_LIBRARY_PATH:-}"
+          python3 scripts/verify_decode_work.py --toolchain "$HOME/.moon" --target ${{ matrix.target }}
+      - name: Upload validation receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-${{ matrix.os }}-${{ matrix.target }}
+          path: |
+            validation/runs/ci-test-${{ matrix.target }}.*
+            validation/decode-work-${{ matrix.target }}/
+          if-no-files-found: warn
 
   playground:
     runs-on: ubuntu-latest
@@ -106,9 +133,47 @@ jobs:
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - name: Moon version
         run: moon version --all
-      - name: Moon update
-        run: moon update
+      - name: Prepare dependency manifests
+        run: python3 scripts/prepare_dependency_cache.py --toolchain "$HOME/.moon"
       - name: Install playground dependencies
         run: pnpm --dir playground install --frozen-lockfile
       - name: Playground check
         run: just playground-check
+      - name: Install DuckDB CLI for existing interoperability check
+        run: |
+          mkdir -p "$RUNNER_TEMP/duckdb-cli"
+          curl -fsSL -o "$RUNNER_TEMP/duckdb-cli.zip" \
+            https://github.com/duckdb/duckdb/releases/download/v1.4.4/duckdb_cli-linux-amd64.zip
+          unzip -q "$RUNNER_TEMP/duckdb-cli.zip" -d "$RUNNER_TEMP/duckdb-cli"
+          chmod +x "$RUNNER_TEMP/duckdb-cli/duckdb"
+          echo "$RUNNER_TEMP/duckdb-cli" >> "$GITHUB_PATH"
+      - name: Existing DuckDB interoperability check
+        run: python3 scripts/run_validation.py ci-duckdb-e2e --cwd . -- node scripts/duckdb_e2e.mjs
+      - name: Upload interoperability receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: duckdb-interoperability
+          path: validation/runs/ci-duckdb-e2e.*
+          if-no-files-found: warn
+
+  row-group-fixtures:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.5'
+      - name: Install independent fixture tools
+        run: python -m pip install -r scripts/row-group-requirements.txt
+      - name: Replay independent fixtures
+        run: python scripts/run_validation.py ci-fixture-replay --cwd . -- python scripts/generate_row_group_fixtures.py --check
+      - name: Upload fixture replay receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-fixture-replay
+          path: validation/runs/ci-fixture-replay.*
+          if-no-files-found: warn

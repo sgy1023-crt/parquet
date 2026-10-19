@@ -6,6 +6,7 @@ priv struct SchemaElementMeta {
   name : String
   num_children : Int32?
   converted_type : Int32?
+  has_logical_type : Bool
 }
 
 ///|
@@ -19,6 +20,7 @@ priv struct ColumnMetaDataMeta {
   total_compressed_size : Int64
   data_page_offset : Int64
   dictionary_page_offset : Int64?
+  statistics : Statistics?
 }
 
 ///|
@@ -41,6 +43,8 @@ priv struct FileMetaDataMeta {
   schema : Array[SchemaElementMeta]
   row_groups : Array[RowGroupMeta]
   created_by : String?
+  num_rows : Int64
+  column_orders : Array[ColumnOrder]?
 }
 
 ///|
@@ -77,6 +81,10 @@ priv struct DictionaryPageHeaderMeta {
 ///|
 priv struct LeafColumnMeta {
   name : String
+  path : Array[String]
+  type_code : Int32
+  converted_type : Int32?
+  has_logical_type : Bool
   column_type : ColumnType
   repetition : Repetition
   max_definition_level : Int32

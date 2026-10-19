@@ -20,6 +20,12 @@ pub fn read_file(String) -> ParquetFile raise ParquetError
 
 pub fn read_file_columnar(String) -> ParquetColumnarFile raise ParquetError
 
+pub fn read_metadata(Bytes) -> ParquetMetadata raise ParquetError
+
+pub fn read_row_group_columnar(Bytes, Int) -> ParquetColumnarFile raise ParquetError
+
+pub fn read_row_groups_columnar(Bytes, Array[Int]) -> ParquetColumnarFile raise ParquetError
+
 pub fn write_bytes(ParquetFile) -> Bytes raise ParquetError
 
 pub fn write_file(String, ParquetFile) -> Unit raise ParquetError
@@ -52,6 +58,42 @@ pub fn Column::repetition(Self) -> Repetition
 pub fn Column::to_repr(Self) -> @debug.Repr
 pub fn Column::to_string(Self) -> String
 pub impl Show for Column
+
+pub struct ColumnChunkMetadata {
+  path : ReadOnlyArray[String]
+  type_code : Int
+  logical_type : Bool
+  converted : Int?
+  flat : Bool
+  raw_statistics : Statistics?
+  values : Int64
+  compressed_size : Int64
+  uncompressed_size : Int64
+  page_offset : Int64
+  dictionary_offset : Int64?
+  order : ColumnOrder?
+}
+pub fn ColumnChunkMetadata::column_order(Self) -> ColumnOrder?
+pub fn ColumnChunkMetadata::converted_type(Self) -> Int?
+pub fn ColumnChunkMetadata::data_page_offset(Self) -> Int64
+pub fn ColumnChunkMetadata::dictionary_page_offset(Self) -> Int64?
+pub fn ColumnChunkMetadata::has_logical_type(Self) -> Bool
+pub fn ColumnChunkMetadata::is_flat(Self) -> Bool
+pub fn ColumnChunkMetadata::num_values(Self) -> Int64
+pub fn ColumnChunkMetadata::path_in_schema(Self) -> ReadOnlyArray[String]
+pub fn ColumnChunkMetadata::physical_type(Self) -> PhysicalType
+pub fn ColumnChunkMetadata::signed_integer_statistics(Self) -> SignedIntegerStatistics? raise ParquetError
+pub fn ColumnChunkMetadata::statistics(Self) -> Statistics?
+pub fn ColumnChunkMetadata::total_compressed_size(Self) -> Int64
+pub fn ColumnChunkMetadata::total_uncompressed_size(Self) -> Int64
+
+pub(all) enum ColumnOrder {
+  TypeDefined
+  Unknown(Int)
+} derive(Eq, @debug.Debug)
+pub fn ColumnOrder::equal(Self, Self) -> Bool
+pub fn ColumnOrder::not_equal(Self, Self) -> Bool
+pub fn ColumnOrder::to_repr(Self) -> @debug.Repr
 
 pub(all) enum ColumnType {
   Boolean
@@ -134,6 +176,31 @@ pub fn ParquetFile::to_string(Self) -> String
 pub impl Eq for ParquetFile
 pub impl Show for ParquetFile
 
+pub struct ParquetMetadata {
+  groups : ReadOnlyArray[RowGroupMetadata]
+  rows : Int64
+  writer : String?
+}
+pub fn ParquetMetadata::created_by(Self) -> String?
+pub fn ParquetMetadata::row_count(Self) -> Int64
+pub fn ParquetMetadata::row_group_count(Self) -> Int
+pub fn ParquetMetadata::row_groups(Self) -> ReadOnlyArray[RowGroupMetadata]
+
+pub(all) enum PhysicalType {
+  Boolean
+  Int32
+  Int64
+  Int96
+  Float
+  Double
+  ByteArray
+  FixedLenByteArray
+  Unknown(Int)
+} derive(Eq, @debug.Debug)
+pub fn PhysicalType::equal(Self, Self) -> Bool
+pub fn PhysicalType::not_equal(Self, Self) -> Bool
+pub fn PhysicalType::to_repr(Self) -> @debug.Repr
+
 pub(all) enum Repetition {
   Required
   Optional
@@ -145,6 +212,49 @@ pub fn Repetition::output(Self, &Logger) -> Unit
 pub fn Repetition::to_repr(Self) -> @debug.Repr
 pub fn Repetition::to_string(Self) -> String
 pub impl Show for Repetition
+
+pub struct RowGroupMetadata {
+  group_index : Int
+  rows : Int64
+  chunks : ReadOnlyArray[ColumnChunkMetadata]
+  byte_size : Int64
+  compressed_size : Int64?
+  offset : Int64?
+}
+pub fn RowGroupMetadata::columns(Self) -> ReadOnlyArray[ColumnChunkMetadata]
+pub fn RowGroupMetadata::file_offset(Self) -> Int64?
+pub fn RowGroupMetadata::index(Self) -> Int
+pub fn RowGroupMetadata::row_count(Self) -> Int64
+pub fn RowGroupMetadata::total_byte_size(Self) -> Int64
+pub fn RowGroupMetadata::total_compressed_size(Self) -> Int64?
+
+pub struct SignedIntegerStatistics {
+  minimum : Int64?
+  maximum : Int64?
+  nulls : Int64?
+}
+pub fn SignedIntegerStatistics::max_value(Self) -> Int64?
+pub fn SignedIntegerStatistics::min_value(Self) -> Int64?
+pub fn SignedIntegerStatistics::null_count(Self) -> Int64?
+
+pub struct Statistics {
+  maximum : Bytes?
+  minimum : Bytes?
+  legacy_maximum : Bytes?
+  legacy_minimum : Bytes?
+  nulls : Int64?
+  distinct : Int64?
+  maximum_exact : Bool?
+  minimum_exact : Bool?
+}
+pub fn Statistics::distinct_count(Self) -> Int64?
+pub fn Statistics::is_max_value_exact(Self) -> Bool?
+pub fn Statistics::is_min_value_exact(Self) -> Bool?
+pub fn Statistics::legacy_max(Self) -> Bytes?
+pub fn Statistics::legacy_min(Self) -> Bytes?
+pub fn Statistics::max_value(Self) -> Bytes?
+pub fn Statistics::min_value(Self) -> Bytes?
+pub fn Statistics::null_count(Self) -> Int64?
 
 pub(all) enum Value {
   Boolean(Bool)

@@ -1,0 +1,4 @@
+# Development-only fixture generators; not library runtime dependencies.
+pyarrow==18.0.0
+numpy==2.2.4
+thrift==0.22.0
