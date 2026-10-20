@@ -20,6 +20,7 @@ UPSTREAM_BASE = "44d4dc9c492008fce77e1a980f1048decbd7f1c9"
 RULES_BLOB = "e27e1d752b573ad88dccf6da681a1492c7dcfe0c"
 RULES_URL = "https://moonbitlang.github.io/Hackathon2026/"
 KNOWN_PR_HEADS = {3: "3e72356fd14a9a15155347e51ba81abf80572b82"}
+OWN_API = "https://api.github.com/repos/sgy1023-crt/parquet"
 
 
 def execution_plan(event, mode, now):
@@ -50,7 +51,7 @@ def execution_plan(event, mode, now):
 def fetch(url, authenticated=False):
     headers = {"User-Agent": "parquet-hackathon-health"}
     if authenticated:
-        if not url.startswith("https://api.github.com/repos/sgy1023-crt/parquet/"):
+        if url != OWN_API and not url.startswith(OWN_API + "/"):
             raise ValueError("The Actions token is restricted to this repository's API")
         headers["Authorization"] = "Bearer " + os.environ["GH_TOKEN"]
     with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=20) as response:
@@ -82,7 +83,7 @@ def health():
               "scope": "metadata checks; build/test results are separate receipts and the job conclusion",
               "commit": git("rev-parse", "HEAD")}
     try:
-        repo = api("sgy1023-crt/parquet/", True)
+        repo = api("sgy1023-crt/parquet", True)
         if repo["private"] or repo["default_branch"] != BRANCH:
             raise RuntimeError("Repository visibility or default branch changed")
         if not repo["fork"] or repo["parent"]["full_name"] != "mizchi/parquet":
