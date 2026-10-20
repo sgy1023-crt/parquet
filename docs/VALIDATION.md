@@ -3,8 +3,42 @@
 This record describes the completed local acceptance run on 2026-10-19.
 Remote runs have their own observable status in
 [GitHub Actions](https://github.com/sgy1023-crt/parquet/actions/workflows/ci.yml).
-A successful local check is not a claim that a GitHub-hosted job has passed.
-The workflow uploads receipts for the commands it actually runs.
+The pinned-toolchain [remote run 39251898624](https://github.com/sgy1023-crt/parquet/actions/runs/39251898624)
+completed successfully for commit `9c9fa23a57cb89fe2a1459c62b3a6bb75b8c430a`.
+The workflow uploads receipts for the commands it actually runs. The local
+result table below is reported separately from those remote jobs.
+
+## Clean replay from the public repository
+
+The [machine-readable clean replay](REMOTE_REPLAY.json) records a new HTTPS
+clone at commit `02d5a18d0e6f8f20355c46117866289864d4c372`. It started without
+project dependencies or build outputs. A separate Python virtual environment,
+fresh MoonBit registry/package cache and independently downloaded DuckDB 1.4.4
+were used. No original project cache was copied.
+
+All 17 checks passed: four backends each ran 71 tests, all 32 fixtures and their
+manifest replayed byte-for-byte, checking/building and interface checks passed,
+both consumers returned the expected rows and all four decoder probes measured
+8/2/0/4/0. Tracked files were unchanged after verification. The recorded source
+tree hash also matches the source in the later toolchain-pin commit; those
+follow-ups changed delivery tooling and documentation, not the MoonBit library.
+
+## Remote toolchain compatibility failure and correction
+
+The [initial remote run](https://github.com/sgy1023-crt/parquet/actions/runs/39251151033)
+and [diagnostic run](https://github.com/sgy1023-crt/parquet/actions/runs/39251600081)
+exposed a real setup failure: floating latest on Linux/macOS installed moonc
+`0.10.16`, which rejects `try?` in QuickCheck 0.14.0's `testable.mbt`.
+Dependency manifest migration cannot fix a compiler/source-language mismatch.
+
+The correction fixes the required build at `0.10.15+943464bfa` in
+[`.moonbit-version`](../.moonbit-version), using the official installer's
+version argument to install matching binaries and core. Dependency source is
+not rewritten to conceal the failure. [DEPENDENCIES.md](DEPENDENCIES.md)
+documents the same installation for reproduction. The
+[subsequent pinned-version run](https://github.com/sgy1023-crt/parquet/actions/runs/39251898624)
+actually completed successfully; that result was read from Actions rather than
+inferred from the setup change.
 
 ## Completed local checks
 
@@ -30,8 +64,8 @@ The workflow uploads receipts for the commands it actually runs.
 The measured setup was moon `0.1.20261012 (748b63c)`, moonc
 `0.10.15+943464bfa`, moonrun `0.1.20261012`, Node `24.12.0`, CPython `3.13.5`,
 PyArrow `18.0.0`, NumPy `2.2.4` and Apache Thrift `0.22.0`.
-Native testing used DuckDB `1.4.4` and MSVC. These numbers describe this setup;
-they do not promise that a changing latest toolchain produces the same result.
+Native testing used DuckDB `1.4.4` and MSVC. Reproduction uses this pinned
+compiler/core build rather than a floating latest installation.
 The separate DuckDB interoperability check was rerun during public delivery;
 it is reported separately from the 71 tests.
 

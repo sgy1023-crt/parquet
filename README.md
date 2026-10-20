@@ -59,19 +59,28 @@ file I/O benefits have not been measured. Input is still the whole file as
 ### Reproduce this contribution
 
 Install the [documented tools and native prerequisites](docs/DEPENDENCIES.md):
-MoonBit (measured: moon `0.1.20261012`, moonc `0.10.15+943464bfa`), Node.js 24,
+the MoonBit build fixed in [`.moonbit-version`](.moonbit-version) (moon
+`0.1.20261012`, moonc `0.10.15+943464bfa`), Node.js 24,
 CPython 3.13.5 and DuckDB 1.4.4. The full native checks require a C compiler.
 Use an isolated Python environment for fixture tools. A POSIX-shell example is:
 
 ```sh
 git clone --branch feat/row-group-statistics https://github.com/sgy1023-crt/parquet.git
 cd parquet
+curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
+export MOON_HOME="$HOME/.moon"
+export PATH="$MOON_HOME/bin:$PATH"
+moon version --all
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r scripts/row-group-requirements.txt
 python scripts/prepare_dependency_cache.py --toolchain "$HOME/.moon"
 python scripts/verify_delivery.py --toolchain "$HOME/.moon" --duckdb "$DUCKDB_DIR"
 ```
+
+The compiler and core must match this pinned build. Floating latest currently
+rejects syntax in the pinned QuickCheck dependency; fixing the toolchain
+version preserves dependency source unchanged.
 
 `DUCKDB_DIR` must contain the downloaded DuckDB header and native library; its
 platform-specific setup and complete PowerShell commands are in
@@ -88,9 +97,11 @@ moon run src/cmd/row_group_scan --target js -- fixtures/row-groups/base.parquet 
 Read the [validation record](docs/VALIDATION.md),
 [delivery scope](docs/DELIVERY.md) and
 [hackathon submission notes](docs/HACKATHON_SUBMISSION.md).
-[GitHub Actions](https://github.com/sgy1023-crt/parquet/actions/workflows/ci.yml)
-is the source for remote status; local results above do not assert that a remote
-run has passed. The suggested category is existing-project maintenance; the
+[GitHub Actions run 39251898624](https://github.com/sgy1023-crt/parquet/actions/runs/39251898624)
+completed successfully for commit `9c9fa23a57cb89fe2a1459c62b3a6bb75b8c430a`
+with the pinned toolchain. The numbers above remain recorded local results;
+individual remote jobs and receipts are available from that run.
+The suggested category is existing-project maintenance; the
 eligibility of an unmerged personal fork is not guaranteed.
 
 The fork preserves the upstream [Apache-2.0 license](LICENSE).

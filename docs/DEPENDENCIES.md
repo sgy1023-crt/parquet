@@ -9,12 +9,45 @@ git clone --branch feat/row-group-statistics https://github.com/sgy1023-crt/parq
 cd parquet
 ```
 
-Install Git, the [MoonBit toolchain](https://www.moonbitlang.com/download/),
+Install Git, the pinned [MoonBit toolchain](https://www.moonbitlang.com/download/),
 Node.js 24, CPython 3.13.5 and a C compiler for native checks (MSVC on Windows,
 Clang/GCC on macOS/Linux). The recorded local run used Node 24.12.0.
-The measured MoonBit version is listed below; a changing latest installation
-must pass real checks before its results can be claimed. No toolchain is
-downloaded or silently substituted by the repository's preparation script.
+
+The required compiler/core build is fixed in
+[`.moonbit-version`](../.moonbit-version): `0.10.15+943464bfa`.
+This is a compatibility requirement: the newer floating latest compiler
+`0.10.16` rejects the `try?` syntax still used by the pinned QuickCheck 0.14.0
+dependency. The repository keeps that dependency's sources unchanged.
+
+On Linux/macOS, install the exact build through the official installer after
+cloning the repository:
+
+```sh
+curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
+export MOON_HOME="$HOME/.moon"
+export PATH="$MOON_HOME/bin:$PATH"
+moon version --all
+```
+
+On Windows, the official PowerShell installer reads
+`MOONBIT_INSTALL_VERSION`. From the cloned repository, install the same build:
+
+```powershell
+$env:MOONBIT_INSTALL_VERSION = (Get-Content .moonbit-version -Raw).Trim()
+$installer = Join-Path ([IO.Path]::GetTempPath()) 'moonbit-install.ps1'
+Invoke-WebRequest -Uri 'https://cli.moonbitlang.com/install/powershell.ps1' -OutFile $installer
+& $installer
+$env:MOON_HOME = Join-Path $env:USERPROFILE '.moon'
+$env:PATH = (Join-Path $env:MOON_HOME 'bin') + [IO.Path]::PathSeparator + $env:PATH
+moon version --all
+```
+
+The official [versioned Windows x86-64 binary archive](https://cli.moonbitlang.com/binaries/0.10.15%2B943464bfa/moonbit-windows-x86_64.zip)
+and [matching core archive](https://cli.moonbitlang.com/cores/core-0.10.15%2B943464bfa.zip)
+are the corresponding artifacts. A compiler archive alone is not a complete
+installation without its matching core. Before continuing, `moon version --all`
+must report moon `0.1.20261012` and moonc `0.10.15+943464bfa`.
+The preparation script does not install or upgrade the toolchain.
 
 Download the matching official native library from
 [DuckDB 1.4.4 releases](https://github.com/duckdb/duckdb/releases/tag/v1.4.4):
@@ -49,6 +82,7 @@ py -3.13 -m venv .venv
 python -m pip install -r scripts/row-group-requirements.txt
 $env:MOON_HOME = Join-Path $env:USERPROFILE '.moon'
 $env:PATH = (Join-Path $env:MOON_HOME 'bin') + [IO.Path]::PathSeparator + $env:PATH
+moon version --all
 $duckdbDir = (Resolve-Path './.tools/duckdb').Path
 python scripts/prepare_dependency_cache.py --toolchain $env:MOON_HOME
 python scripts/verify_delivery.py --toolchain $env:MOON_HOME --duckdb $duckdbDir
@@ -79,9 +113,9 @@ remote receipts are attached to [Actions runs](https://github.com/sgy1023-crt/pa
 
 The verified toolchain is `moon 0.1.20261012 (748b63c)` with
 `moonc v0.10.15+943464bfa`. Use that toolchain for reproducing the measured
-results. `prepare_dependency_cache.py` records actual versions and requires a
-successful real compiler check; other toolchains are not rejected by name alone
-and are not claimed to be verified. It does not install or upgrade the toolchain.
+results, with compiler and core from the same pinned build.
+`prepare_dependency_cache.py` records actual versions and requires a successful
+real compiler check. It does not install or upgrade the toolchain.
 It uses Python 3.9 or
 newer and the toolchain's own `moon` and `moonfmt` executables.
 
