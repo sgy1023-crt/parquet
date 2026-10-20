@@ -7,13 +7,13 @@
 - Contributor for this enhancement: [sgy1023-crt](https://github.com/sgy1023-crt).
 - Original project and author: [mizchi/parquet](https://github.com/mizchi/parquet),
   [mizchi](https://github.com/mizchi).
-- Proposed category: **已有项目维护** (existing-project maintenance), because this
+- Registered category: **已有项目维护** (existing-project maintenance), because this
   work extends an existing implementation with public APIs, statistics
   interpretation, decoder selection and compatibility verification.
 
-This is a category recommendation, not confirmed event eligibility or an
-acceptance certificate. Whether an unmerged personal fork satisfies the final
-rules has not been guaranteed. Publication does not itself settle contest rules.
+The participant confirmed registration-review approval on 2026-10-20 based on
+the organizers' email. Final acceptance remains separate and evaluates completion,
+quality, licensing and MoonBit relevance. See the [final checklist](HACKATHON_FINAL_CHECKLIST.md).
 
 ## Background and contribution boundary
 
@@ -93,4 +93,4 @@ fixtures retain their source information. Statistics semantics cite the fixed
 
 **项目名称：MoonBit Parquet 行组统计与选择性读取**
 
-基于 mizchi 的 Apache-2.0 Parquet 库，sgy1023-crt 新增 Statistics 解析、公开行组元数据及单组和多组选择性读取，复用原解码器并兼容旧 API，建议按“已有项目维护”申报。统计解释限定为扁平、无注解 INT32/INT64；消费者先选组，再做真实残余过滤。本地四后端各通过 71 项测试，32 个独立 fixture 可重放，其中 16 个为故意负例。真实列块解码调用由 8 次降至 2 次，空选择为 0 次，并有毒页对照；尚未测量速度、内存或 I/O 收益。代码、复现步骤及 CI 公开。未合并 Fork 的赛事资格以最终规则为准。
+基于 mizchi 的 Apache-2.0 Parquet 库，sgy1023-crt 新增 Statistics 解析、公开行组元数据及单组和多组选择性读取，复用原解码器并兼容旧 API，已按“已有项目维护”申报并通过报名初审。统计解释限定为扁平、无注解 INT32/INT64；消费者先选组，再做真实残余过滤。本地四后端各通过 71 项测试，32 个独立 fixture 可重放，其中 16 个为故意负例。真实列块解码调用由 8 次降至 2 次，空选择为 0 次，并有毒页对照；尚未测量速度、内存或 I/O 收益。代码与 CI 公开，最终验收以赛事规则为准。

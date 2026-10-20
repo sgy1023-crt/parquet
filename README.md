@@ -101,8 +101,10 @@ Read the [validation record](docs/VALIDATION.md),
 completed successfully for commit `9c9fa23a57cb89fe2a1459c62b3a6bb75b8c430a`
 with the pinned toolchain. The numbers above remain recorded local results;
 individual remote jobs and receipts are available from that run.
-The suggested category is existing-project maintenance; the
-eligibility of an unmerged personal fork is not guaranteed.
+The participant reports that this existing-project maintenance entry passed
+registration review. Final acceptance remains a separate assessment. See the
+[maintenance schedule and final checklist](docs/HACKATHON_FINAL_CHECKLIST.md)
+for actual automation, evidence and the remaining manual procedures.
 
 The fork preserves the upstream [Apache-2.0 license](LICENSE).
 [Synthetic fixtures and their provenance](fixtures/row-groups/README.md) are

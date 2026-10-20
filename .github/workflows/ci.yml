@@ -7,16 +7,44 @@ on:
       - feat/row-group-statistics
   pull_request:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: Full acceptance or lightweight health check
+        type: choice
+        options: [full, health]
+        default: full
+  schedule:
+    # 09:17 Asia/Shanghai. The plan job expires scheduled work after October 31.
+    - cron: '17 1 * * *'
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}-${{ inputs.mode }}
   cancel-in-progress: true
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      full_matrix: ${{ steps.route.outputs.full_matrix }}
+      acceptance: ${{ steps.route.outputs.acceptance }}
+      health: ${{ steps.route.outputs.health }}
+      light_tests: ${{ steps.route.outputs.light_tests }}
+      phase: ${{ steps.route.outputs.phase }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Route dated checks
+        id: route
+        env:
+          INPUT_MODE: ${{ inputs.mode || 'full' }}
+        run: python3 scripts/hackathon_maintenance.py plan
+
   lint:
+    needs: plan
+    if: needs.plan.outputs.full_matrix == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -35,8 +63,12 @@ jobs:
         run: just fmt-check
       - name: Verify generated interfaces
         run: just info-check
+      - name: Test monitoring dates and deadline
+        run: python3 scripts/run_validation.py maintenance-unit --cwd . -- python3 -m unittest discover -s scripts -p hackathon_maintenance_test.py
 
   test:
+    needs: plan
+    if: needs.plan.outputs.full_matrix == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -111,6 +143,8 @@ jobs:
           if-no-files-found: warn
 
   playground:
+    needs: plan
+    if: needs.plan.outputs.full_matrix == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -158,6 +192,8 @@ jobs:
           if-no-files-found: warn
 
   row-group-fixtures:
+    needs: plan
+    if: needs.plan.outputs.full_matrix == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -176,4 +212,99 @@ jobs:
         with:
           name: independent-fixture-replay
           path: validation/runs/ci-fixture-replay.*
+          if-no-files-found: warn
+
+  health:
+    name: Repository health
+    needs: plan
+    if: needs.plan.outputs.health == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Read-only repository, upstream and official rules check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/hackathon_maintenance.py health
+      - name: Install pinned MoonBit for daily smoke
+        if: needs.plan.outputs.light_tests == 'true'
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Prepare dependencies
+        if: needs.plan.outputs.light_tests == 'true'
+        run: python3 scripts/prepare_dependency_cache.py --toolchain "$HOME/.moon"
+      - name: Daily JS check and tests
+        if: needs.plan.outputs.light_tests == 'true'
+        run: |
+          python3 scripts/run_validation.py daily-check --cwd . -- moon check --target js --deny-warn
+          python3 scripts/run_validation.py daily-test --cwd . -- moon test --target js
+      - name: Upload health and failure receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hackathon-health
+          path: |
+            validation/hackathon-health.json
+            validation/runs/daily-*
+          retention-days: 90
+          if-no-files-found: warn
+
+  acceptance:
+    name: Final acceptance
+    needs: plan
+    if: needs.plan.outputs.acceptance == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Repository health for manual full acceptance
+        if: needs.plan.outputs.health != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/hackathon_maintenance.py health
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.5'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install pinned compiler and independent fixture tools
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+          python -m pip install -r scripts/row-group-requirements.txt
+      - name: Install DuckDB native library
+        run: |
+          mkdir -p .tools/duckdb
+          curl -fsSL -o "$RUNNER_TEMP/duckdb.zip" https://github.com/duckdb/duckdb/releases/download/v1.4.4/libduckdb-linux-amd64.zip
+          unzip -q "$RUNNER_TEMP/duckdb.zip" -d .tools/duckdb
+      - name: Download fresh project dependencies
+        run: python scripts/prepare_dependency_cache.py --toolchain "$HOME/.moon"
+      - name: Full acceptance from the fresh checkout
+        run: python scripts/verify_delivery.py --toolchain "$HOME/.moon" --duckdb "$GITHUB_WORKSPACE/.tools/duckdb"
+      - name: Write exact-commit acceptance report
+        if: always()
+        run: python3 scripts/hackathon_maintenance.py report
+      - name: Upload full acceptance and failure receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hackathon-final-acceptance
+          path: |
+            validation/hackathon-*.json
+            validation/delivery-summary.json
+            validation/runs/
+            validation/decode-work-*/
+          retention-days: 90
           if-no-files-found: warn
