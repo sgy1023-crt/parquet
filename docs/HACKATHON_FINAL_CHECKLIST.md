@@ -28,6 +28,14 @@
 工作流在默认分支上为 active，定时配置已发布；首次日常计划为 10/21。以上证明实际手动路径可运行，不冒称未来 schedule 已经发生。
 10/28 的报告将在当日重新运行后产生，不能用本次演练替代。
 
+## 2026-10-21 每日核查
+
+截至北京时间 13:39，GitHub API 没有任何 `event=schedule` 记录，不能认定今天 09:17 的定时检查已执行。
+已[手动补跑健康检查](https://github.com/sgy1023-crt/parquet/actions/runs/39550814464)：JS 71/71、编译检查通过，公开性、默认分支、上游与官方规则快照均正常。
+13:42 显式重新启用 CI，API 确认 `state=active`；这不证明原生定时已恢复。当前公开配置符合默认分支与启用要求，具体未触发原因尚未确认。
+[GitHub 官方说明](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)允许定时延迟或丢弃；10/25、10/28 仍须查实际运行记录，缺失时使用下面的手动命令兜底。
+库代码、依赖版本与定时时刻未改，不以手动运行冒充自动触发。
+
 ## 实际自动调度
 
 使用现有 [CI 工作流](https://github.com/sgy1023-crt/parquet/actions/workflows/ci.yml)，不是 Codex 会话后台运行。
