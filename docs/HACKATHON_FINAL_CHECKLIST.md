@@ -36,6 +36,19 @@
 [GitHub 官方说明](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)允许定时延迟或丢弃；10/25、10/28 仍须查实际运行记录，缺失时使用下面的手动命令兜底。
 库代码、依赖版本与定时时刻未改，不以手动运行冒充自动触发。
 
+## 2026-10-25 中期复核
+
+10/21–10/24 已连续出现四次成功的原生 `schedule` 运行，例如 [10/21](https://github.com/sgy1023-crt/parquet/actions/runs/39552990085)和 [10/24](https://github.com/sgy1023-crt/parquet/actions/runs/40068083092)。这补充了 10/21 午间检查之后的实际调度证据；定时启动仍有延迟。
+
+本次开始检查时尚无 10/25 定时记录，已使用现有 `mode=full` [手动完整复核](https://github.com/sgy1023-crt/parquet/actions/runs/40166099480)，不冒充自动触发，也不替代 10/28 复核。
+实测代码提交为 `d39115500fb1556d77c4121ba331b2bae338391c`，全新检出环境通过全部 17 项检查：四后端各 71/71、全目标检查与构建、格式与公开接口一致性、32 个 fixture 的逐字节重放，以及两个消费者示例。
+四后端的实际解码计数均为 full=8、selected=2、empty=0、ordered=4、invalid=0；INT32 示例匹配 2 行，超出浮点精确范围的 INT64 示例匹配 3 行。未测量速度、内存或 I/O 收益。
+报告和原始命令收据见该次运行的 `hackathon-final-acceptance` artifact；此 Job 名仅表示工程检查，最终赛事验收仍由组委会确认。
+
+README、使用示例、API 边界、来源与许可材料已复核；`LICENSE` 与上游基线一致。上游仍为 `44d4dc9` / v0.2.2，已知 PR #3 未变化，未发现新增公开安全公告。库代码、公开 API 与依赖均未改。
+
+官网规则源与先前快照一致，仍明示 10/31；尚未发现必须新建分支、提交上游 PR 或获得合并的新规定。[10/21 的普通参与者留言](https://github.com/moonbitlang/Hackathon2026/issues/1#issuecomment-6314073182)称章程第八章有 10/24 日期，但当前线程没有官方答复，不能据此认定赛事改期。飞书章程本次仍无法读取，需参赛者尽快人工核对最新群公告中的截止日期、时区及最终验收入口。
+
 ## 实际自动调度
 
 使用现有 [CI 工作流](https://github.com/sgy1023-crt/parquet/actions/workflows/ci.yml)，不是 Codex 会话后台运行。
