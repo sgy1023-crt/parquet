@@ -11,7 +11,7 @@
 - [x] [已验证完整 CI](https://github.com/sgy1023-crt/parquet/actions/runs/39370996665)：四后端各 71/71，另含 macOS native；32 fixture；解码计数 8/2/0/4/0；DuckDB 互操作与 playground 通过。
 - [x] [独立公开克隆记录](REMOTE_REPLAY.json)及[验证边界](VALIDATION.md)可查。完整 Bytes 仍加载入内存，未声称速度、内存或 I/O 收益。
 - [x] 工具链固定在 [`.moonbit-version`](../.moonbit-version)，依赖不随意升级；上游截至本次检查仍为 `44d4dc9`、v0.2.2。
-- [ ] 以 10/28 实际运行的最终验收报告确认当时的 Commit SHA、各后端、命令与结果。
+- [x] [10/28 当日完整工程验收](https://github.com/sgy1023-crt/parquet/actions/runs/40641043157)已通过，实测 SHA、各后端、命令、结果与限制见下文；不代表组委会终审通过。
 - [ ] 参赛者按最终公告自行提交验收材料并处理收款手续。
 
 ## 2026-10-20 实际维护验证
@@ -48,6 +48,37 @@
 README、使用示例、API 边界、来源与许可材料已复核；`LICENSE` 与上游基线一致。上游仍为 `44d4dc9` / v0.2.2，已知 PR #3 未变化，未发现新增公开安全公告。库代码、公开 API 与依赖均未改。
 
 官网规则源与先前快照一致，仍明示 10/31；尚未发现必须新建分支、提交上游 PR 或获得合并的新规定。[10/21 的普通参与者留言](https://github.com/moonbitlang/Hackathon2026/issues/1#issuecomment-6314073182)称章程第八章有 10/24 日期，但当前线程没有官方答复，不能据此认定赛事改期。飞书章程本次仍无法读取，需参赛者尽快人工核对最新群公告中的截止日期、时区及最终验收入口。
+
+## 2026-10-28 完整工程验收报告
+
+本次开始检查时尚无 10/28 原生定时记录，使用既有 `workflow_dispatch` / `mode=full` [实际运行](https://github.com/sgy1023-crt/parquet/actions/runs/40641043157)完成复核。不是用此前结果代替当日执行。
+**实测代码与复现基线：`4d01e5bc469abce6b85fc6bb0a695909f9c77cb6`。** 后续本清单更新只追加文档，不改变该实现；复现时可先 `git checkout --detach 4d01e5bc469abce6b85fc6bb0a695909f9c77cb6`，再按 README 和 DEPENDENCIES.md 安装与执行。
+
+运行日志确认使用全新 Ubuntu 24.04 Runner，在空工作目录初始化 Git 并检出该提交，重新安装固定工具链及下载依赖。实测 `moon` / `moonrun` 为 `0.1.20261012`、`moonc` 为 `0.10.15+943464bfa`；Python 3.13.5、Node.js 24、DuckDB 1.4.4 与固定 fixture 工具按现有工作流安装。
+
+| 后端（本次 Ubuntu 环境） | 单测通过 / 总数 | 失败 | full / selected / empty / ordered / invalid 解码计数 |
+|---|---|---|---|
+| JS | 71 / 71 | 0 | 8 / 2 / 0 / 4 / 0 |
+| wasm | 71 / 71 | 0 | 8 / 2 / 0 / 4 / 0 |
+| wasm-gc | 71 / 71 | 0 | 8 / 2 / 0 / 4 / 0 |
+| native | 71 / 71 | 0 | 8 / 2 / 0 / 4 / 0 |
+
+全部 **17/17 项检查通过、0 项失败或超时**，另含定向库测试 25/25（属于上述 71 项）、格式检查、生成接口无变化、全目标检查和构建（警告视为错误）。
+32 个独立 fixture 及 manifest 逐字节重放一致，其中 16 个有效文件、16 个故意负例。消费者 `i32 >= 102` 选择组 `[2]`、解码 4 行、匹配 2 行；`i64 >= 9007199254740995` 匹配 3 行并保持整数精确性。
+
+实际完整入口：
+
+```sh
+python scripts/prepare_dependency_cache.py --toolchain "$HOME/.moon"
+python scripts/verify_delivery.py --toolchain "$HOME/.moon" --duckdb "$GITHUB_WORKSPACE/.tools/duckdb"
+```
+
+`hackathon-final-acceptance` artifact 中的 `hackathon-acceptance.json` 记录上述 SHA、运行链接、全部 17 条实际子命令、退出码与测试数量；`runs/` 保留原始输出，`decode-work-*/` 保留四后端测量证据。每个子检查仍有 60 秒硬超时。上述路径是本次 CI 环境；本地路径设置见 DEPENDENCIES.md。
+
+已复核 README、API 与消费者文档、Apache-2.0 许可和来源，许可与上游基线一致。上游仍为 `44d4dc9` / v0.2.2、已知 PR #3 无变化，官方规则快照未变，未发现新增分支、上游 PR 或合并的硬性要求。私人群公告、验收表与截止时间口径未确认，不能以公开检查替代。
+
+**工程结论：现有实现与可复现材料具备提交最终验收的条件，未发现阻断性缺陷。** 本轮未修改库、公开 API、依赖或工作流；10/29–10/30 按计划冻结功能，仅处理阻断问题与人工提交材料。
+已知限制保持不变：输入仍为完整 Bytes；仅保守解释支持范围内的 INT32/INT64 统计；没有测得速度、峰值内存或 I/O 收益。本次工程通过不等于组委会终审或奖金到账，也没有代替参赛者提交表单或联系他人。
 
 ## 实际自动调度
 
