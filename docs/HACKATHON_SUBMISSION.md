@@ -93,4 +93,4 @@ fixtures retain their source information. Statistics semantics cite the fixed
 
 **项目名称：MoonBit Parquet 行组统计与选择性读取**
 
-基于 mizchi 的 Apache-2.0 Parquet 库，sgy1023-crt 新增 Statistics 解析、公开行组元数据及单组和多组选择性读取，复用原解码器并兼容旧 API，已按“已有项目维护”申报并通过报名初审。统计解释限定为扁平、无注解 INT32/INT64；消费者先选组，再做真实残余过滤。10/30 使用 moonc 0.10.16 复核，JS 74/74，wasm、wasm-gc、native 各 71/71；32 个独立 fixture 可重放，其中 16 个为故意负例。真实列块解码调用由 8 次降至 2 次，空选择为 0 次，并有毒页对照；尚未测量速度、内存或 I/O 收益。代码与 CI 公开，Mooncakes 候选包已准备但尚未发布，最终验收以赛事规则为准。参赛者提供的群指南明确，初审通过后无需再次填写验收表。
+基于 mizchi 的 Apache-2.0 Parquet 库，sgy1023-crt 新增 Statistics 解析、公开行组元数据及单组和多组选择性读取，复用原解码器并兼容旧 API，已按“已有项目维护”申报并通过报名初审。统计解释限定为扁平、无注解 INT32/INT64；消费者先选组，再做真实残余过滤。10/30 使用 moonc 0.10.16 复核，JS 74/74，wasm、wasm-gc、native 各 71/71；32 个独立 fixture 可重放，其中 16 个为故意负例。真实列块解码调用由 8 次降至 2 次，空选择为 0 次，并有毒页对照；尚未测量速度、内存或 I/O 收益。已发布 sgy1023-crt/parquet@0.3.0 至 Mooncakes，注册表独立安装、四后端各 5 项消费者测试与全目标构建均通过。代码与 CI 公开，最终验收以赛事规则为准。参赛者提供的群指南明确，初审通过后无需再次填写验收表。

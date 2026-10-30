@@ -22,7 +22,7 @@
 | CI 检查、构建、测试 | 复用原 CI，补充显式构建；新工具链 push CI 9/9、远程完整验收 17/17，见下文 |
 | 至少一个可运行示例 | [消费者 CLI](ROW_GROUP_EXAMPLE.md)，有 INT32 和精确 INT64 两种实际运行 |
 | 完整核心测试 | 原 71 项保留，JS 另加 3 项浏览器转换回归；结果以真实收据为准 |
-| 发布到 Mooncakes | `sgy1023-crt/parquet@0.3.0` 已获参赛者明确发布授权；服务端预检通过，正在完成实际发布与注册表独立安装验证 |
+| 发布到 Mooncakes | [0.3.0 已正式发布](https://mooncakes.io/docs/sgy1023-crt/parquet@0.3.0)；注册表独立下载、源码校验、四后端消费者测试及示例均通过，见下文 |
 | OSI 许可证与上游合规 | Apache-2.0，保留 mizchi、DuckDB 转换来源及 fixture 来源；[许可证](../LICENSE)未改 |
 
 普通提交、推送和 CI 维护已获授权。参赛者在 10/30 明确授权本次 `0.3.0` 发布；CI 仍不自动发布包。
@@ -69,8 +69,62 @@
 - 发布候选 149 个文件，在独立空目录解包后，重新下载依赖，全目标检查通过、JS 74/74；
   没有借用当前工作区的依赖目录。源码、测试和 fixture 完整，发布文件检查通过。
 
-本轮继续完成已授权的实际发布与独立安装验证；不能将 `moon package`、构建通过、账号存在或 dry-run 写成发布成功。
-发布证据与结果完成后追加在本清单。CI 不会自动发布。按本日群指南无需再次填写验收表。
+已在下节补齐实际发布与独立安装验证；`moon package`、构建通过、账号存在或 dry-run 均未被当作发布成功。
+CI 不会自动发布。按本日群指南无需再次填写验收表。
+
+## 2026-10-30 Mooncakes 实际发布与独立安装验收
+
+参赛者已明确授权此次发布，并完成官方 GitHub 登录。实际执行：
+
+```sh
+moon publish --dry-run
+moon publish
+```
+
+正式发布于北京时间 **2026-10-30 12:39** 完成，服务端返回 **200 OK**，CLI 退出码 **0**。
+公开包与文档：[sgy1023-crt/parquet@0.3.0](https://mooncakes.io/docs/sgy1023-crt/parquet@0.3.0)。
+本次只发布该版本，没有自动发布工作流、上游 PR、表单或对外留言。
+
+发布源码提交：[`60d4dfe`](https://github.com/sgy1023-crt/parquet/commit/60d4dfedb79e7427a264b856b2d7a800d6e728e0)。
+其 Parquet 源码和 module manifest 与上述完整验收提交 `408c274` 逐字节一致，之后只更新安装和发布材料。
+[该发布提交的 CI](https://github.com/sgy1023-crt/parquet/actions/runs/41004074158) 9/9 个实际执行 Job 成功。
+
+发布包含 149 个文件，SHA-256：
+`b6480d6d46a77b2a10bf09e0afb4e553ee15a207a5413c5fb651a63cc2f0ca24`。
+发布前再次检查，未包含凭据、`.tools`、依赖缓存、构建目录、node_modules 或私人审查资料。
+
+在全新独立消费者 module 中，未设置本地依赖替换，也没有复用项目的 `.mooncakes`：
+
+```sh
+moon add sgy1023-crt/parquet@0.3.0
+moon test --target js
+moon test --target wasm
+moon test --target wasm-gc
+moon test --target native
+moon check --target all --deny-warn
+moon build --target all --deny-warn
+moon run src --target js
+```
+
+安装日志明确记录从注册表下载 `sgy1023-crt/parquet@0.3.0`；下载的全部 149 个文件与已审查发布包逐字节一致。
+消费者使用独立复制的 PyArrow fixture，通过公开 API 验证 5 个场景：元数据/精确 INT64 统计，
+全量/单组/多组/顺序/空选择，INT32/INT64 消费者残余过滤，毒页跳过对照，以及原有 reader/writer 往返。
+
+| 本次独立消费者验证 | 结果 |
+|---|---|
+| JS | 5/5，通过 |
+| wasm | 5/5，通过 |
+| wasm-gc | 5/5，通过 |
+| Windows native | 5/5，通过 |
+| 全目标检查与构建 | 退出码 0 |
+| 实际示例 | `row_groups=4 selected_rows=4 exact_int64_matches=3` |
+
+这 5 项是发布后消费者验证，不加入原仓库 74/71 测试数量。
+消费者测试入口存在主包 blackbox 测试将来弃用的 Moon CLI 提示，当前测试实际运行且通过；未隐藏该提示或宣称完全无警告。
+原始发布、下载、测试、构建及文件哈希回执已保存于本地发布审查材料，未上传凭据。
+
+**工程材料已覆盖参赛者提供的九项验收指南，实际发布这一缺口已补齐。**
+无需再次填写验收表；最终赛事验收和款项发放仍由组委会处理，本记录不代替其结论。
 
 ## 2026-10-20 实际维护验证
 

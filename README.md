@@ -129,6 +129,7 @@ license information. Statistics follow a
 ### Mooncakes package
 
 This fork uses `sgy1023-crt/parquet@0.3.0` in this contributor's own namespace.
+Version [0.3.0 is published on Mooncakes](https://mooncakes.io/docs/sgy1023-crt/parquet@0.3.0).
 Use MoonBit 0.10.16 or later; the exact tested build is pinned above. Add it to
 an existing MoonBit module:
 
@@ -147,6 +148,12 @@ import {
 Function and type contracts are preserved; the fork's import prefix differs
 from upstream `mizchi/parquet`. The GitHub [final checklist](docs/HACKATHON_FINAL_CHECKLIST.md)
 records registry publication and independent consumer verification.
+
+An independent consumer installed 0.3.0 from the registry on 2026-10-30:
+all 149 downloaded files matched the reviewed release archive, five public-API
+tests passed on each backend, all-target checks/builds passed, and the runnable
+INT64 example matched three rows. These additional consumer tests are separate
+from this repository's 74 JS / 71 other-backend tests.
 
 ## Status
 
