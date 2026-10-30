@@ -16,27 +16,11 @@ fmt-check:
 
 # Type check
 check:
-    if [ "{{target}}" = "native" ]; then \
-        CPATH="$HOME/brew/opt/duckdb/include:${CPATH:-}" \
-        LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${LIBRARY_PATH:-}" \
-        LD_LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${LD_LIBRARY_PATH:-}" \
-        DYLD_LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${DYLD_LIBRARY_PATH:-}" \
-        moon check --deny-warn --target {{target}}; \
-    else \
-        moon check --deny-warn --target {{target}}; \
-    fi
+    moon check --deny-warn --target {{target}}
 
 # Run tests
 test:
-    if [ "{{target}}" = "native" ]; then \
-        CPATH="$HOME/brew/opt/duckdb/include:${CPATH:-}" \
-        LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${LIBRARY_PATH:-}" \
-        LD_LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${LD_LIBRARY_PATH:-}" \
-        DYLD_LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${DYLD_LIBRARY_PATH:-}" \
-        moon test --target {{target}}; \
-    else \
-        moon test --target {{target}}; \
-    fi
+    moon test --target {{target}}
 
 # Run benchmarks
 bench:

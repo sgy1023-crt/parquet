@@ -58,10 +58,11 @@ the platform-specific [dependency setup](DEPENDENCIES.md). Run:
 
 ```sh
 python scripts/prepare_dependency_cache.py --toolchain "$MOON_HOME"
-python scripts/verify_delivery.py --toolchain "$MOON_HOME" --duckdb "$DUCKDB_DIR"
+python scripts/verify_delivery.py --toolchain "$MOON_HOME"
 ```
 
-The toolchain root and DuckDB directory are explicit inputs. The verifier runs
+The toolchain root is an explicit input. Native checks need a C compiler, but
+no DuckDB native library. The verifier runs
 real tests, checks, builds, consumer commands, independent fixture replay and
 decoder instrumentation. Each child check has a 60-second timeout; errors stop
 the run with a nonzero exit. Python packages are development-only tools, not

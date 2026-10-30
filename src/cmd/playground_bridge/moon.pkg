@@ -1,5 +1,5 @@
 import {
-  "mizchi/parquet/playground_bridge" @playground,
+  "sgy1023-crt/parquet/playground_bridge" @playground,
 }
 
 pkgtype(kind: "executable")

@@ -23,16 +23,11 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--toolchain", type=Path, required=True)
-    parser.add_argument("--duckdb", type=Path, help="Optional directory containing duckdb.h and native library")
     args = parser.parse_args()
     toolchain = args.toolchain.resolve()
     env = os.environ.copy()
     env["MOON_HOME"] = str(toolchain)
     env["PATH"] = str(toolchain / "bin") + os.pathsep + env["PATH"]
-    if args.duckdb:
-        duckdb = str(args.duckdb.resolve())
-        for name in ("INCLUDE", "LIB", "CPATH", "LIBRARY_PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH", "PATH"):
-            env[name] = duckdb + os.pathsep + env.get(name, "")
     receipt = {"started_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                "status": "failed", "unit_tests": {}, "checks": []}
     destination = ROOT / "validation" / "delivery-summary.json"

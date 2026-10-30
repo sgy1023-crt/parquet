@@ -1,21 +1,20 @@
-name = "mizchi/parquet"
+name = "sgy1023-crt/parquet"
 
-version = "0.2.2"
+version = "0.3.0"
 
 import {
   "moonbitlang/x@0.5.5",
-  "mizchi/duckdb@0.6.4",
 }
 
 readme = "README.md"
 
-repository = "https://github.com/mizchi/parquet"
+repository = "https://github.com/sgy1023-crt/parquet"
 
 license = "Apache-2.0"
 
 keywords = [ "moonbit", "parquet" ]
 
-description = "Parquet reader/writer for MoonBit."
+description = "MoonBit Parquet reader/writer with row-group statistics and selective decoding; based on mizchi/parquet."
 
 source = "src"
 

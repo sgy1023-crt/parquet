@@ -1,5 +1,5 @@
 import {
-  "mizchi/parquet/examples/row_group_scan" @scan,
+  "sgy1023-crt/parquet/examples/row_group_scan" @scan,
   "moonbitlang/core/debug",
   "moonbitlang/core/env",
   "moonbitlang/core/string",

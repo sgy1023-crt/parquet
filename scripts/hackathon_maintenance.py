@@ -151,7 +151,7 @@ def acceptance_report():
     report["engineering_checks_passed"] = report["status"] == "passed"
     report["limits"] = ["Whole Bytes input; speed, memory and I/O gains are not measured",
                         "Initial registration approval does not replace final contest acceptance",
-                        "Final form and private announcement checks remain manual"]
+                        "No additional acceptance form per the participant-provided group guide; final review and payment remain external"]
     write_report("hackathon-acceptance", report)
 
 

@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/parquet/examples/row_group_scan"
+package "sgy1023-crt/parquet/examples/row_group_scan"
 
 import {
-  "mizchi/parquet",
+  "sgy1023-crt/parquet",
 }
 
 // Values
@@ -13,15 +13,15 @@ pub fn scan_ge(Bytes, Array[String], Int64) -> ScanResult raise @parquet.Parquet
 // Types and methods
 pub struct ScanResult {
   batch : @parquet.ParquetColumnarFile
-  selected_row_groups : ReadOnlyArray[Int]
-  matching_rows : ReadOnlyArray[Int]
+  selected_row_groups : ReadOnlyArray[Int32]
+  matching_rows : ReadOnlyArray[Int32]
   matching_file_rows : ReadOnlyArray[Int64]
 }
 pub fn ScanResult::batch(Self) -> @parquet.ParquetColumnarFile
 pub fn ScanResult::matching_file_rows(Self) -> ReadOnlyArray[Int64]
-pub fn ScanResult::matching_row_count(Self) -> Int
-pub fn ScanResult::matching_rows(Self) -> ReadOnlyArray[Int]
-pub fn ScanResult::selected_row_groups(Self) -> ReadOnlyArray[Int]
+pub fn ScanResult::matching_row_count(Self) -> Int32
+pub fn ScanResult::matching_rows(Self) -> ReadOnlyArray[Int32]
+pub fn ScanResult::selected_row_groups(Self) -> ReadOnlyArray[Int32]
 
 // Type aliases
 

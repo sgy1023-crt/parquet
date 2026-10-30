@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/parquet/cmd/duckdb_e2e"
+package "sgy1023-crt/parquet/cmd/duckdb_e2e"
 
 // Values
 

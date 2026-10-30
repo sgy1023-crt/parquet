@@ -55,7 +55,7 @@ Follow the [README](../README.md#reproduce-this-contribution) and
 
 ```sh
 python scripts/prepare_dependency_cache.py --toolchain "$MOON_HOME"
-python scripts/verify_delivery.py --toolchain "$MOON_HOME" --duckdb "$DUCKDB_DIR"
+python scripts/verify_delivery.py --toolchain "$MOON_HOME"
 moon run src/cmd/row_group_scan --target js -- fixtures/row-groups/base.parquet i32 102
 ```
 

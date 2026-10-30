@@ -81,10 +81,8 @@ jobs:
             target: wasm-gc
           - os: ubuntu-latest
             target: native
-            duckdb_asset: libduckdb-linux-amd64.zip
           - os: macos-latest
             target: native
-            duckdb_asset: libduckdb-osx-universal.zip
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -95,49 +93,25 @@ jobs:
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
-      - name: Install DuckDB native library
-        if: matrix.target == 'native'
-        run: |
-          set -eu
-          dest="$HOME/brew/opt/duckdb"
-          mkdir -p "$dest/include" "$dest/lib"
-          tmpdir="$(mktemp -d)"
-          curl -fsSL \
-            -o "$tmpdir/duckdb.zip" \
-            "https://github.com/duckdb/duckdb/releases/download/v1.4.4/${{ matrix.duckdb_asset }}"
-          unzip -q "$tmpdir/duckdb.zip" -d "$tmpdir/unpacked"
-          cp "$tmpdir/unpacked/duckdb.h" "$dest/include/duckdb.h"
-          if [ -f "$tmpdir/unpacked/libduckdb.dylib" ]; then
-            cp "$tmpdir/unpacked/libduckdb.dylib" "$dest/lib/libduckdb.dylib"
-          else
-            cp "$tmpdir/unpacked/libduckdb.so" "$dest/lib/libduckdb.so"
-          fi
       - name: Moon version
         run: moon version --all
       - name: Prepare dependency manifests
         run: python3 scripts/prepare_dependency_cache.py --toolchain "$HOME/.moon"
       - name: Moon check
         run: just target=${{ matrix.target }} check
+      - name: Moon build
+        run: python3 scripts/run_validation.py ci-build-${{ matrix.target }} --cwd . -- moon build --target ${{ matrix.target }} --deny-warn
       - name: Moon test
-        run: |
-          export CPATH="$HOME/brew/opt/duckdb/include:${CPATH:-}"
-          export LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${LIBRARY_PATH:-}"
-          export LD_LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${LD_LIBRARY_PATH:-}"
-          export DYLD_LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${DYLD_LIBRARY_PATH:-}"
-          python3 scripts/run_validation.py ci-test-${{ matrix.target }} --cwd . -- moon test --target ${{ matrix.target }}
+        run: python3 scripts/run_validation.py ci-test-${{ matrix.target }} --cwd . -- moon test --target ${{ matrix.target }}
       - name: Verify real chunk decoder work
-        run: |
-          export CPATH="$HOME/brew/opt/duckdb/include:${CPATH:-}"
-          export LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${LIBRARY_PATH:-}"
-          export LD_LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${LD_LIBRARY_PATH:-}"
-          export DYLD_LIBRARY_PATH="$HOME/brew/opt/duckdb/lib:${DYLD_LIBRARY_PATH:-}"
-          python3 scripts/verify_decode_work.py --toolchain "$HOME/.moon" --target ${{ matrix.target }}
+        run: python3 scripts/verify_decode_work.py --toolchain "$HOME/.moon" --target ${{ matrix.target }}
       - name: Upload validation receipts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: validation-${{ matrix.os }}-${{ matrix.target }}
           path: |
+            validation/runs/ci-build-${{ matrix.target }}.*
             validation/runs/ci-test-${{ matrix.target }}.*
             validation/decode-work-${{ matrix.target }}/
           if-no-files-found: warn
@@ -284,15 +258,10 @@ jobs:
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$(cat .moonbit-version)"
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
           python -m pip install -r scripts/row-group-requirements.txt
-      - name: Install DuckDB native library
-        run: |
-          mkdir -p .tools/duckdb
-          curl -fsSL -o "$RUNNER_TEMP/duckdb.zip" https://github.com/duckdb/duckdb/releases/download/v1.4.4/libduckdb-linux-amd64.zip
-          unzip -q "$RUNNER_TEMP/duckdb.zip" -d .tools/duckdb
       - name: Download fresh project dependencies
         run: python scripts/prepare_dependency_cache.py --toolchain "$HOME/.moon"
       - name: Full acceptance from the fresh checkout
-        run: python scripts/verify_delivery.py --toolchain "$HOME/.moon" --duckdb "$GITHUB_WORKSPACE/.tools/duckdb"
+        run: python scripts/verify_delivery.py --toolchain "$HOME/.moon"
       - name: Write exact-commit acceptance report
         if: always()
         run: python3 scripts/hackathon_maintenance.py report

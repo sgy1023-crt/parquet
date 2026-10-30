@@ -1,10 +1,18 @@
 ///|
+#external
+priv type WasmConnection
+
+///|
+#external
+priv type ArrowTable
+
+///|
 extern "js" fn js_clone_bytes(bytes : Bytes) -> Bytes =
   #|(bytes) => new Uint8Array(bytes)
 
 ///|
 extern "js" fn js_connect_local_wasm(
-  on_ok : (@duckdb.Connection) -> Unit,
+  on_ok : (WasmConnection) -> Unit,
   on_err : (String) -> Unit,
 ) -> Unit =
   #|(on_ok, on_err) => {
@@ -31,7 +39,7 @@ extern "js" fn js_connect_local_wasm(
 
 ///|
 extern "js" fn js_register_file_buffer(
-  conn : @duckdb.Connection,
+  conn : WasmConnection,
   file_name : String,
   bytes : Bytes,
   on_ok : () -> Unit,
@@ -57,7 +65,7 @@ extern "js" fn js_register_file_buffer(
 
 ///|
 fn register_file_buffer(
-  conn : @duckdb.Connection,
+  conn : WasmConnection,
   file_name : String,
   bytes : Bytes,
   on_done : (Result[Unit, String]) -> Unit,
@@ -73,12 +81,97 @@ fn register_file_buffer(
 
 ///|
 fn connect_local_wasm(
-  on_done : (Result[@duckdb.Connection, String]) -> Unit,
+  on_done : (Result[WasmConnection, String]) -> Unit,
 ) -> Unit {
   js_connect_local_wasm(fn(conn) { on_done(Ok(conn)) }, fn(message) {
     on_done(Err(message))
   })
 }
+
+///|
+extern "js" fn js_query(
+  conn : WasmConnection,
+  sql : String,
+  on_ok : (ArrowTable) -> Unit,
+  on_err : (String) -> Unit,
+) -> Unit =
+  #|(conn, sql, on_ok, on_err) => {
+  #|  const run = async () => on_ok(await conn.conn.query(sql));
+  #|  run().catch(err => on_err(err && err.message ? err.message : String(err)));
+  #|}
+
+///|
+// DuckDB's Arrow values cross the JS boundary as FixedArray; public tables keep
+// their existing growable Array representation, including the separate null map.
+// Scalar conversion preserves mizchi/duckdb 0.6.4's Apache-2.0 JS/WASM behavior.
+// Adapted from duckdb.mbt ab32b92d9102d2549156a83cf3e3a8ea09356402,
+// src/duckdb_js.mbt: only the WASM query/close and Arrow conversion paths remain.
+extern "js" fn js_convert_arrow_table(
+  table : ArrowTable,
+  make_table : (
+    FixedArray[String],
+    FixedArray[FixedArray[String]],
+    FixedArray[FixedArray[Bool]],
+  ) -> PlaygroundTable,
+) -> PlaygroundTable =
+  #|(table, make_table) => {
+  #|  const toCell = value => {
+  #|    if (value === null || value === undefined) return ["", true];
+  #|    if (typeof value === "string") return [value, false];
+  #|    if (typeof value === "number") {
+  #|      if (Number.isNaN(value)) return ["nan", false];
+  #|      if (value === Infinity) return ["inf", false];
+  #|      if (value === -Infinity) return ["-inf", false];
+  #|      return [String(value), false];
+  #|    }
+  #|    if (typeof value === "boolean" || typeof value === "bigint") return [String(value), false];
+  #|    return [JSON.stringify(value), false];
+  #|  };
+  #|  let columns = table.schema && table.schema.fields ? table.schema.fields.map(field => field.name) : [];
+  #|  const rowObjects = table.toArray().map(row => row.toJSON());
+  #|  if (columns.length === 0 && rowObjects.length > 0) columns = Object.keys(rowObjects[0]);
+  #|  const rows = [];
+  #|  const nulls = [];
+  #|  for (const row of rowObjects) {
+  #|    const values = [];
+  #|    const rowNulls = [];
+  #|    for (const name of columns) {
+  #|      const cell = toCell(row[name]);
+  #|      values.push(cell[0]);
+  #|      rowNulls.push(cell[1]);
+  #|    }
+  #|    rows.push(values);
+  #|    nulls.push(rowNulls);
+  #|  }
+  #|  return make_table(columns, rows, nulls);
+  #|}
+
+///|
+fn arrow_to_playground_table(table : ArrowTable) -> PlaygroundTable {
+  js_convert_arrow_table(table, fn(columns, rows, nulls) {
+    {
+      columns: columns.iter().to_array(),
+      rows: rows.iter().map(row => row.iter().to_array()).to_array(),
+      nulls: nulls.iter().map(row => row.iter().to_array()).to_array(),
+    }
+  })
+}
+
+///|
+extern "js" fn js_close(
+  conn : WasmConnection,
+  on_ok : () -> Unit,
+  on_err : (String) -> Unit,
+) -> Unit =
+  #|(conn, on_ok, on_err) => {
+  #|  const run = async () => {
+  #|    if (conn.conn && typeof conn.conn.close === "function") await conn.conn.close();
+  #|    if (conn.db && typeof conn.db.terminate === "function") await conn.db.terminate();
+  #|    if (conn.worker && typeof conn.worker.terminate === "function") conn.worker.terminate();
+  #|    on_ok();
+  #|  };
+  #|  run().catch(err => on_err(err && err.message ? err.message : String(err)));
+  #|}
 
 ///|
 pub fn query_registered_parquet(
@@ -102,26 +195,24 @@ pub fn query_registered_parquet(
                 on_done,
               )
             Ok(_) =>
-              conn.query(sql, on_done=fn(query_result) {
-                match query_result {
-                  Err(@duckdb.DuckDBError::Message(message)) =>
-                    close_with_result(
-                      conn,
-                      Err("duckdb query failed: " + message),
-                      on_done,
-                    )
-                  Ok(result) =>
-                    close_with_result(
-                      conn,
-                      Ok({
-                        columns: result.columns,
-                        rows: result.rows,
-                        nulls: result.nulls,
-                      }),
-                      on_done,
-                    )
-                }
-              })
+              js_query(
+                conn,
+                sql,
+                fn(table) {
+                  close_with_result(
+                    conn,
+                    Ok(arrow_to_playground_table(table)),
+                    on_done,
+                  )
+                },
+                fn(message) {
+                  close_with_result(
+                    conn,
+                    Err("duckdb query failed: " + message),
+                    on_done,
+                  )
+                },
+              )
           }
         })
     }
@@ -130,19 +221,15 @@ pub fn query_registered_parquet(
 
 ///|
 fn close_with_result(
-  conn : @duckdb.Connection,
+  conn : WasmConnection,
   result : Result[PlaygroundTable, String],
   on_done : (Result[PlaygroundTable, String]) -> Unit,
 ) -> Unit {
-  conn.close(on_done=fn(close_result) {
-    match close_result {
-      Ok(_) => on_done(result)
-      Err(@duckdb.DuckDBError::Message(message)) =>
-        match result {
-          Ok(_) => on_done(Err("duckdb close failed: " + message))
-          Err(error) =>
-            on_done(Err(error + "; duckdb close also failed: " + message))
-        }
+  js_close(conn, fn() { on_done(result) }, fn(message) {
+    match result {
+      Ok(_) => on_done(Err("duckdb close failed: " + message))
+      Err(error) =>
+        on_done(Err(error + "; duckdb close also failed: " + message))
     }
   })
 }

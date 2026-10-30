@@ -2,6 +2,31 @@
 
 All notable changes to this project should be documented in this file.
 
+## [0.3.0] - Release candidate (2026-10-30)
+
+This fork's package is `sgy1023-crt/parquet`; upstream remains `mizchi/parquet`.
+Publication is pending approval. Original authorship and Apache-2.0 licensing
+are preserved.
+
+### Added
+
+- Public row-group metadata and raw Statistics, with conservative validated
+  INT32/INT64 statistics for supported physical types and ordering.
+- Single/multiple selected-row-group decoding through existing decoders,
+  preserving request order and validating indices before decoding.
+- Independent fixtures, skipped-page and decoder-work verification, and a
+  consumer demonstrating group selection followed by residual filtering.
+
+### Fixed
+
+- Reject Compact length/varint/bounds overflows found by malformed fixtures.
+- Support the pinned MoonBit 0.10.16 compiler by removing the obsolete MoonBit
+  DuckDB/QuickCheck dependency chain. The browser bridge uses its existing npm
+  DuckDB WASM client, preserving its public result and error contracts.
+
+Existing functions and types retain their contracts. Consumers of the fork's
+registry package must use the new namespace in their imports.
+
 ## [0.2.2] - 2026-09-24
 
 ### Changed

@@ -1,7 +1,7 @@
 # Row-group scan consumer
 
 `src/examples/row_group_scan` is a separate MoonBit package that imports
-`mizchi/parquet`. Its `scan_ge(Bytes, Array[String], Int64)` function uses public
+`sgy1023-crt/parquet`. Its `scan_ge(Bytes, Array[String], Int64)` function uses public
 metadata and selected-read APIs to evaluate a single `column >= threshold`
 predicate. Predicate logic lives entirely in the consumer.
 

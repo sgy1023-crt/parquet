@@ -1,6 +1,7 @@
-# mizchi/parquet
+# MoonBit Parquet — row-group statistics and selective reading
 
-Parquet reader/writer for MoonBit.
+Parquet reader/writer for MoonBit, maintained here as `sgy1023-crt/parquet`
+with the original `mizchi/parquet` attribution and Apache-2.0 license preserved.
 
 ## 2026 MoonBit Hackathon — Row Group Statistics & Selective Decoding
 
@@ -12,7 +13,11 @@ based on upstream commit
 [`44d4dc9`](https://github.com/mizchi/parquet/commit/44d4dc9c492008fce77e1a980f1048decbd7f1c9).
 The upstream [consumer request, Issue #4](https://github.com/mizchi/parquet/issues/4),
 provides the use case. Existing reader/writer, codecs, DuckDB integration,
-playground and benchmarks remain upstream contributions.
+playground and benchmarks remain upstream contributions. The browser bridge's
+scalar conversion preserves the behavior of the Apache-2.0
+[mizchi/duckdb 0.6.4 binding](https://github.com/mizchi/duckdb.mbt);
+the bridge now uses the existing npm DuckDB WASM client directly for compatibility
+with MoonBit 0.10.16.
 
 | Before, at the upstream baseline | This contribution |
 |---|---|
@@ -56,12 +61,20 @@ are not decoded. These are decoding-work measurements; speed, peak memory and
 file I/O benefits have not been measured. Input is still the whole file as
 `Bytes`; there is no Range I/O, predicate engine or column projection.
 
+**Revalidated locally on 2026-10-30 with moonc 0.10.16:** JS **74/74**
+(three additional browser conversion regressions), wasm / wasm-gc / native
+**71/71** each, all 17 delivery checks passed, and all 32 fixtures replayed.
+Decoder-entry counts remain **8/2/0/4/0**. The production browser build also
+passed actual DuckDB WASM queries, including exact INT64, empty-result schema,
+NULL versus empty string, and recovery after an expected SQL error.
+
 ### Reproduce this contribution
 
 Install the [documented tools and native prerequisites](docs/DEPENDENCIES.md):
-the MoonBit build fixed in [`.moonbit-version`](.moonbit-version) (moon
-`0.1.20261012`, moonc `0.10.15+943464bfa`), Node.js 24,
-CPython 3.13.5 and DuckDB 1.4.4. The full native checks require a C compiler.
+the MoonBit build fixed in [`.moonbit-version`](.moonbit-version)
+(`moonc 0.10.16+b1a0e846e`), Node.js 24 and CPython 3.13.5.
+The full native checks require a C compiler. DuckDB CLI 1.4.4 is used only by
+the separate interoperability check; no DuckDB native library is required.
 Use an isolated Python environment for fixture tools. A POSIX-shell example is:
 
 ```sh
@@ -75,16 +88,14 @@ python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r scripts/row-group-requirements.txt
 python scripts/prepare_dependency_cache.py --toolchain "$HOME/.moon"
-python scripts/verify_delivery.py --toolchain "$HOME/.moon" --duckdb "$DUCKDB_DIR"
+python scripts/verify_delivery.py --toolchain "$HOME/.moon"
 ```
 
-The compiler and core must match this pinned build. Floating latest currently
-rejects syntax in the pinned QuickCheck dependency; fixing the toolchain
-version preserves dependency source unchanged.
-
-`DUCKDB_DIR` must contain the downloaded DuckDB header and native library; its
-platform-specific setup and complete PowerShell commands are in
-[DEPENDENCIES.md](docs/DEPENDENCIES.md). The verification script runs tests,
+The compiler and core must match this pinned build. It meets the acceptance
+guide's minimum compiler version of 0.10.16. The outdated MoonBit DuckDB /
+QuickCheck dependency chain has been removed; dependency source is not patched.
+Complete PowerShell commands are in [DEPENDENCIES.md](docs/DEPENDENCIES.md).
+The verification script runs tests,
 checks, builds, consumer smoke tests, fixture replay and real decoder-entry
 measurements, with a hard 60-second limit for each child check. It exits nonzero
 on failure. For a quick consumer run after setup:
@@ -111,6 +122,14 @@ The fork preserves the upstream [Apache-2.0 license](LICENSE).
 Apache-2.0; the upstream Apache test corpus retains its existing source and
 license information. Statistics follow a
 [pinned Apache parquet-format specification](https://github.com/apache/parquet-format/blob/53b8bd8576827080d4382fa457003f45b41cda6e/src/main/thrift/parquet.thrift).
+
+### Mooncakes package preparation
+
+The release candidate is `sgy1023-crt/parquet@0.3.0` in this contributor's
+own namespace. Publication is pending explicit approval; the candidate is not
+yet advertised as installable from Mooncakes. Once released, consumers use
+`sgy1023-crt/parquet` in their `moon.pkg` imports. Function and type contracts
+are preserved; the fork's import prefix differs from upstream `mizchi/parquet`.
 
 ## Status
 
@@ -190,7 +209,9 @@ just playground-build
 just playground-build-pages
 ```
 
-In the UI, you can edit schema JSON / rows JSON / SQL, generate parquet bytes with `mizchi/parquet`, and execute `read_parquet('playground.parquet')` on the DuckDB WASM backend (`mizchi/duckdb`, a fork of `f4ah6o/duckdb` that builds on current MoonBit).
+In the UI, edit schema JSON / rows JSON / SQL, generate parquet bytes with this
+Parquet implementation, and execute `read_parquet('playground.parquet')` on
+the existing npm DuckDB WASM client through the MoonBit playground bridge.
 
 GitHub Pages:
 

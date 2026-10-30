@@ -1,5 +1,5 @@
 import {
-  "mizchi/parquet",
+  "sgy1023-crt/parquet",
   "moonbitlang/core/env",
 }
 

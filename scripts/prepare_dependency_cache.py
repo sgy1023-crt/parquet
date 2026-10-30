@@ -1,8 +1,7 @@
-"""Prepare pinned dependencies for the verified October 2026 MoonBit toolchain.
+"""Download and verify pinned dependencies without rewriting their source.
 
-Only legacy manifests in this checkout's .mooncakes cache are converted. Every
-command has a 60-second timeout; original diagnostics and SHA-256 receipts are
-saved even when preparation fails. Dependency source files are never rewritten.
+Every command has a 60-second timeout; diagnostics and SHA-256 receipts are
+saved even when preparation fails.
 """
 
 import argparse
@@ -17,11 +16,9 @@ import sys
 import time
 
 
-DIRECT_DEPENDENCIES = {
+DEPENDENCIES = {
     "moonbitlang/x": "0.5.5",
-    "mizchi/duckdb": "0.6.4",
 }
-DEPENDENCIES = {**DIRECT_DEPENDENCIES, "moonbitlang/quickcheck": "0.14.0"}
 TIMEOUT_SECONDS = 60
 
 
@@ -37,9 +34,6 @@ def source_hashes(directory):
 
 
 def manifest_identity(path):
-    if path.suffix == ".json":
-        manifest = json.loads(path.read_text(encoding="utf-8"))
-        return manifest["name"], manifest["version"]
     text = path.read_text(encoding="utf-8")
     fields = {}
     for field in ("name", "version"):
@@ -101,59 +95,14 @@ def require_success(label, result):
 def validate_root(root):
     manifest = root / "moon.mod"
     imports = dict(re.findall(r'"([^"\n]+)@([^"\n]+)"', manifest.read_text(encoding="utf-8")))
-    if imports != DIRECT_DEPENDENCIES:
-        raise ValueError(f"Expected the pinned root dependencies {DIRECT_DEPENDENCIES}; got {imports}")
+    if imports != DEPENDENCIES:
+        raise ValueError(f"Expected the pinned root dependencies {DEPENDENCIES}; got {imports}")
     return sha256(manifest)
-
-
-def convert_cached_manifests(root, moonfmt, commands, report):
-    converted = 0
-    cache = (root / ".mooncakes").resolve()
-    for module, version in DEPENDENCIES.items():
-        directory = root / ".mooncakes" / module
-        if not directory.exists():
-            continue
-        if not directory.resolve().is_relative_to(cache):
-            raise ValueError(f"Dependency cache resolves outside this checkout: {directory}")
-        legacy_module = directory / "moon.mod.json"
-        modern_module = directory / "moon.mod"
-        identity = manifest_identity(modern_module if modern_module.exists() else legacy_module)
-        if identity != (module, version):
-            raise ValueError(f"Expected {module}@{version}, found {identity} in {directory}")
-        before_sources = source_hashes(directory)
-        manifests = sorted(
-            path for path in directory.rglob("*.json")
-            if path.name in ("moon.mod.json", "moon.pkg.json")
-        )
-        for legacy in manifests:
-            modern = legacy.with_suffix("")
-            if modern.exists():
-                continue
-            before = sha256(legacy)
-            relative = legacy.relative_to(root).as_posix()
-            require_success(relative, commands.run("moonfmt", [moonfmt, legacy, "-o", modern]))
-            if sha256(legacy) != before:
-                raise RuntimeError(f"Formatter changed its input manifest: {legacy}")
-            report["migrations"].append({
-                "module": module,
-                "version": version,
-                "input": relative,
-                "input_sha256": before,
-                "output": modern.relative_to(root).as_posix(),
-                "output_sha256": sha256(modern),
-            })
-            converted += 1
-        after_sources = source_hashes(directory)
-        if before_sources != after_sources:
-            raise RuntimeError(f"Dependency .mbt source changed during migration: {module}")
-        report["source_hashes"][module] = before_sources
-    return converted
 
 
 def prepare(root, toolchain, log_dir):
     suffix = ".exe" if os.name == "nt" else ""
     moon = toolchain / "bin" / f"moon{suffix}"
-    moonfmt = toolchain / "bin" / f"moonfmt{suffix}"
     log_dir.mkdir(parents=True, exist_ok=False)
     report = {
         "status": "failed",
@@ -161,7 +110,6 @@ def prepare(root, toolchain, log_dir):
         "toolchain": str(toolchain),
         "expected_dependencies": DEPENDENCIES,
         "commands": [],
-        "migrations": [],
         "source_hashes": {},
     }
     commands = Commands(root, toolchain, log_dir, report)
@@ -170,26 +118,12 @@ def prepare(root, toolchain, log_dir):
         report["root_moon_mod_sha256"] = root_hash
         version = require_success("toolchain version", commands.run("version", [moon, "version", "--all"]))
         report["toolchain_version"] = version
-        report["moonfmt_sha256"] = sha256(moonfmt)
         require_success("registry update", commands.run("registry-update", [moon, "update"]))
-        # At most one discovery per pinned module, followed by one final check.
-        for attempt in range(1, len(DEPENDENCIES) + 2):
-            code, stdout, stderr = commands.run(f"check-{attempt}", [moon, "check", "--target", "js"])
-            if code == 0:
-                break
-            diagnostic = stdout + stderr
-            legacy_error = "is no longer supported" in diagnostic and (
-                "moon.mod.json" in diagnostic or "moon.pkg.json" in diagnostic
-            )
-            if not legacy_error:
-                raise RuntimeError(f"moon check failed with exit code {code}; see command logs")
-            print(f"Dependency check {attempt} stopped on a legacy manifest (exit {code}); original diagnostic saved in {log_dir}.", flush=True)
-            converted = convert_cached_manifests(root, moonfmt, commands, report)
-            if converted == 0:
-                raise RuntimeError("Legacy manifest diagnostic had no convertible pinned dependency manifest")
-            print(f"Converted {converted} cached manifests with moonfmt; checking dependency resolution again.", flush=True)
-        else:
-            raise RuntimeError("Pinned dependency graph did not converge after manifest migration")
+        for module in DEPENDENCIES:
+            directory = root / ".mooncakes" / module
+            if directory.exists():
+                report["source_hashes"][module] = source_hashes(directory)
+        require_success("dependency check", commands.run("check", [moon, "check", "--target", "js"]))
         for module, expected_version in DEPENDENCIES.items():
             directory = root / ".mooncakes" / module
             actual = manifest_identity(directory / "moon.mod")
@@ -197,14 +131,14 @@ def prepare(root, toolchain, log_dir):
                 raise ValueError(f"Expected {module}@{expected_version}, found {actual}")
             current_hashes = source_hashes(directory)
             if module in report["source_hashes"] and current_hashes != report["source_hashes"][module]:
-                raise RuntimeError(f"Dependency .mbt source changed after migration: {module}")
+                raise RuntimeError(f"Dependency .mbt source changed during preparation: {module}")
             report["source_hashes"][module] = current_hashes
         report["root_moon_mod_sha256_after"] = sha256(root / "moon.mod")
         if report["root_moon_mod_sha256_after"] != root_hash:
             raise RuntimeError("Root moon.mod changed during dependency preparation")
         report["dependency_sources_unchanged"] = True
         report["status"] = "success"
-        print(f"Prepared all three pinned dependencies; receipts: {log_dir / 'summary.json'}", flush=True)
+        print(f"Prepared {len(DEPENDENCIES)} pinned dependency; receipts: {log_dir / 'summary.json'}", flush=True)
     finally:
         (log_dir / "summary.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 

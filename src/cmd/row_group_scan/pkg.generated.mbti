@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "mizchi/parquet/cmd/row_group_scan"
+package "sgy1023-crt/parquet/cmd/row_group_scan"
 
 // Values
 

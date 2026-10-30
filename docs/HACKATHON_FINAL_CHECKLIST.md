@@ -4,15 +4,51 @@
 2026-10-20，参赛者提供的组委会邮件确认**报名初审通过**；不公开私人邮件、姓名或收款资料。
 最终验收仍独立评估完成度、质量、合规和生态相关性，初审不等于最终验收或款项到账。
 
-## 当前工程材料
+## 2026-10-30 群验收指南与当前状态
 
-- [x] [公开 Fork](https://github.com/sgy1023-crt/parquet)，默认分支 `feat/row-group-statistics`，保留上游历史及 Apache-2.0 来源。
-- [x] [README](../README.md)、[申报说明](HACKATHON_SUBMISSION.md)、[API](ROW_GROUP_API.md)、[消费者](ROW_GROUP_EXAMPLE.md)、[复现步骤](DEPENDENCIES.md)齐全。
-- [x] [已验证完整 CI](https://github.com/sgy1023-crt/parquet/actions/runs/39370996665)：四后端各 71/71，另含 macOS native；32 fixture；解码计数 8/2/0/4/0；DuckDB 互操作与 playground 通过。
-- [x] [独立公开克隆记录](REMOTE_REPLAY.json)及[验证边界](VALIDATION.md)可查。完整 Bytes 仍加载入内存，未声称速度、内存或 I/O 收益。
-- [x] 工具链固定在 [`.moonbit-version`](../.moonbit-version)，依赖不随意升级；上游截至本次检查仍为 `44d4dc9`、v0.2.2。
-- [x] [10/28 当日完整工程验收](https://github.com/sgy1023-crt/parquet/actions/runs/40641043157)已通过，实测 SHA、各后端、命令、结果与限制见下文；不代表组委会终审通过。
-- [ ] 参赛者按最终公告自行提交验收材料并处理收款手续。
+参赛者本日提供的群公告原文明确：**审核通过后，验收前不需要再提交任何表格；保持开发并上传 GitHub 即可。**
+公告还要求 `moonc >= 0.10.16`、CI 覆盖检查/构建/测试，以及**发布到 mooncakes.io**。
+这是参赛者提供的私有群公告，尚无公开原文 URL；不能把此前网页中没有这些条目理解为免除要求。
+
+此前 10/28 的工程复核使用 0.10.15，报告保留为历史证据，不能证明符合本次新确认的版本和发布条件。
+本日只处理这些实际缺口，不扩展 Parquet 功能。
+
+| 指南要求 | 当前证据或剩余工作 |
+|---|---|
+| MoonBit 为主要语言，moonc 不低于 0.10.16 | 已固定 `0.10.16+b1a0e846e`；本地 17 项完整复测通过，见下文 |
+| GitHub 公开，提交历史清晰 | [公开 Fork](https://github.com/sgy1023-crt/parquet)，保留上游历史，默认分支 `feat/row-group-statistics` |
+| 声明核心功能可用 | Statistics、行组元数据和选择性读取；核心及消费者测试、毒页和实际解码计数验证 |
+| 可复现 README | [README](../README.md)与[依赖步骤](DEPENDENCIES.md)已更新到新工具链 |
+| CI 检查、构建、测试 | 复用原 CI，补充显式构建，移除已不需要的 DuckDB 原生库安装；等待新提交实跑 |
+| 至少一个可运行示例 | [消费者 CLI](ROW_GROUP_EXAMPLE.md)，有 INT32 和精确 INT64 两种实际运行 |
+| 完整核心测试 | 原 71 项保留，JS 另加 3 项浏览器转换回归；结果以真实收据为准 |
+| 发布到 Mooncakes | **待发布**：候选 `sgy1023-crt/parquet@0.3.0`；本机账号已确认，须通过预检并经参赛者明确授权后发布 |
+| OSI 许可证与上游合规 | Apache-2.0，保留 mizchi、DuckDB 转换来源及 fixture 来源；[许可证](../LICENSE)未改 |
+
+普通提交、推送和 CI 维护已获授权。实际包发布需另行确认，依据参赛者此前“不自动发布包”的明确指示。
+不需要新建其他分支、向上游提交 PR、等待合并或增加无意义提交。
+报名初审通过不等于终审通过或款项到账；收款资料等私人手续留给参赛者处理。
+
+## 2026-10-30 新工具链实际本地复测
+
+固定工具链：`moonc 0.10.16+b1a0e846e`，moon/moonrun `0.1.20261020 (2284bd2)`。
+实际执行 `python scripts/verify_delivery.py --toolchain .tools/moon-0.10.16`：
+**17/17 子检查通过，无失败或超时**。JS 74/74，wasm、wasm-gc、Windows native 各 71/71；
+新增 3 项仅限 JS 的 Arrow 转换回归。原核心与消费者测试均保留，全目标检查/构建、格式和接口一致性通过。
+32 个 fixture 逐字节重放一致，四后端实测解码计数均为 full=8、selected=2、empty=0、ordered=4、invalid=0。
+两个 CLI 消费者分别匹配 2 行与 3 行；仍未测量速度、峰值内存或 I/O 收益。
+
+原浏览器测试 4/4、Vite 生产构建通过。Playwright 实际打开生产构建，使用真实 DuckDB WASM 执行普通/聚合查询；
+另断言 INT64 最大值和大于 2^53 的值精确、NULL 与空串区分、空结果保留列名、预期 SQL 错误后再次查询成功。
+这些结果来自真实浏览器；单元测试中的结构化 Arrow 输入未冒充真实数据库。
+
+`moon package --frozen --list` 已生成并检查候选包，包含源码、测试、README、LICENSE 和必需 fixture，
+未包含凭据、依赖缓存、构建目录、node_modules、私人审查资料或沟通草稿。
+**尚未实际发布**。隔离工具链 `moon publish --frozen --dry-run` 因尚未登录而失败，未视为预检成功。
+已确认本机 Mooncakes 账号为 `sgy1023-crt`；需通过官方 CLI 登录正确工具链，完成发布预检，
+在参赛者明确授权后发布，再独立安装并验证消费者。
+
+本地原始回执保留于忽略的 `validation/`。新提交的远程 CI 与完整 fresh-checkout 验收结果待实际运行后补充。
 
 ## 2026-10-20 实际维护验证
 
@@ -87,7 +123,7 @@ python scripts/verify_delivery.py --toolchain "$HOME/.moon" --duckdb "$GITHUB_WO
 
 | 北京日期 / 触发方式 | 实际路径 |
 |---|---|
-| 10/20–10/31 普通每日检查 | 仓库公开性、默认分支、祖先/材料、最近 push CI、上游/公开规则快照；仅 JS 检查与 71 项测试 |
+| 10/20–10/31 普通每日检查 | 仓库公开性、默认分支、祖先/材料、最近 push CI、上游/公开规则快照；仅 JS 检查与测试（10/30 起 74 项） |
 | 10/25 | 复用原完整 CI 矩阵，并记录上游与规则；不重复每日 JS 测试 |
 | 10/28 | fresh checkout 安装固定工具和新依赖，运行完整 `verify_delivery.py`；不再同时启动原完整矩阵 |
 | 手动 `mode=full` | 当场完整验收，不受赛事日期限制 |
@@ -127,7 +163,7 @@ gh run list --repo sgy1023-crt/parquet --workflow ci.yml --limit 5
 | 截止 | 明示 2026-10-31，未明示时区及准确时刻；北京时间 23:59 不能当作已确认规则。 |
 | 支持 | [L169](https://github.com/moonbitlang/Hackathon2026/blob/a879c208b261ca500f65707d42504d06572fa9b0/src/App.tsx#L169)：150 元对应申报通过，350 元对应完成且通过本期审核；维护类别适用细则、具体到账日和银行卡手续未明确，不能保证到账。 |
 | 季度 | [L98](https://github.com/moonbitlang/Hackathon2026/blob/a879c208b261ca500f65707d42504d06572fa9b0/src/App.tsx#L98)：社区维护项目主动报名；本次报名是否覆盖季度入口未明确。 |
-| 私有渠道待人工查 | [正式章程](https://bxup9uklfcb.feishu.cn/wiki/Dx4Bwd6D1i3GfHkajQCcF7SznEd)本轮无法读取；最终验收表、准确截止时间、季度入口、收款和昵称细节请查群/飞书公告及自己的银行流水。 |
+| 私有渠道待人工查 | [正式章程](https://bxup9uklfcb.feishu.cn/wiki/Dx4Bwd6D1i3GfHkajQCcF7SznEd)本轮无法读取；准确截止时间、季度入口、收款和昵称细节请查群/飞书公告及自己的银行流水；10/30 参赛者提供的群指南已明确无需再次填表。 |
 
 项目安排（不是赛事硬性规定）：10/29–10/30 冻结功能，仅修阻断问题、下载报告并整理材料，不依赖 10/31 最后数小时。
 若私有公告出现新增要求，由参赛者决定并提供原文后处理；自动监控不联系任何人或代替提交。
