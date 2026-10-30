@@ -2,11 +2,10 @@
 
 All notable changes to this project should be documented in this file.
 
-## [0.3.0] - Release candidate (2026-10-30)
+## [0.3.0] - 2026-10-30
 
 This fork's package is `sgy1023-crt/parquet`; upstream remains `mizchi/parquet`.
-Publication is pending approval. Original authorship and Apache-2.0 licensing
-are preserved.
+Original authorship and Apache-2.0 licensing are preserved.
 
 ### Added
 

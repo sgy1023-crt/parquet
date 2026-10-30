@@ -126,13 +126,27 @@ Apache-2.0; the upstream Apache test corpus retains its existing source and
 license information. Statistics follow a
 [pinned Apache parquet-format specification](https://github.com/apache/parquet-format/blob/53b8bd8576827080d4382fa457003f45b41cda6e/src/main/thrift/parquet.thrift).
 
-### Mooncakes package preparation
+### Mooncakes package
 
-The release candidate is `sgy1023-crt/parquet@0.3.0` in this contributor's
-own namespace. Publication is pending explicit approval; the candidate is not
-yet advertised as installable from Mooncakes. Once released, consumers use
-`sgy1023-crt/parquet` in their `moon.pkg` imports. Function and type contracts
-are preserved; the fork's import prefix differs from upstream `mizchi/parquet`.
+This fork uses `sgy1023-crt/parquet@0.3.0` in this contributor's own namespace.
+Use MoonBit 0.10.16 or later; the exact tested build is pinned above. Add it to
+an existing MoonBit module:
+
+```sh
+moon add sgy1023-crt/parquet@0.3.0
+```
+
+Then import the library in the consuming package's `moon.pkg`:
+
+```moonbit
+import {
+  "sgy1023-crt/parquet",
+}
+```
+
+Function and type contracts are preserved; the fork's import prefix differs
+from upstream `mizchi/parquet`. The GitHub [final checklist](docs/HACKATHON_FINAL_CHECKLIST.md)
+records registry publication and independent consumer verification.
 
 ## Status
 
