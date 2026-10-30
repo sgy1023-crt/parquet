@@ -108,10 +108,13 @@ moon run src/cmd/row_group_scan --target js -- fixtures/row-groups/base.parquet 
 Read the [validation record](docs/VALIDATION.md),
 [delivery scope](docs/DELIVERY.md) and
 [hackathon submission notes](docs/HACKATHON_SUBMISSION.md).
-[GitHub Actions run 39251898624](https://github.com/sgy1023-crt/parquet/actions/runs/39251898624)
-completed successfully for commit `9c9fa23a57cb89fe2a1459c62b3a6bb75b8c430a`
-with the pinned toolchain. The numbers above remain recorded local results;
-individual remote jobs and receipts are available from that run.
+[GitHub Actions run 41002594210](https://github.com/sgy1023-crt/parquet/actions/runs/41002594210)
+passed all nine active CI jobs for code commit
+`408c274e9560cad91eee1403b89b2094c295b536` with the pinned 0.10.16 toolchain,
+including checks, explicit builds, tests, macOS native and DuckDB interoperability.
+[Fresh-checkout acceptance run 41002685678](https://github.com/sgy1023-crt/parquet/actions/runs/41002685678)
+also passed all 17 checks for that commit. Exact commands and raw receipts are
+attached to these runs; the final checklist records the remaining release step.
 The participant reports that this existing-project maintenance entry passed
 registration review. Final acceptance remains a separate assessment. See the
 [maintenance schedule and final checklist](docs/HACKATHON_FINAL_CHECKLIST.md)
